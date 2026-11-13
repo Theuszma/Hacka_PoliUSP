@@ -3,6 +3,7 @@ import { CATEGORIES } from "@/lib/catalog";
 import { FREIGHT_CO2_PER_TKM, MATERIAL_FACTORS } from "@/lib/engine/factors";
 import { METHODS, type MethodKey } from "@/lib/engine/methods";
 import { SOURCES } from "@/lib/engine/sources";
+import { SECTORS, type FlowTemplate } from "@/lib/sectors";
 import { AppShell, PageHeader } from "@/components/shell";
 import { PublicFooter, PublicHeader } from "@/components/public-header";
 import { MethodBody } from "@/components/how";
@@ -47,6 +48,27 @@ function Content() {
             </Table>
           </div>
           <p className="border-t px-5 py-3 text-xs text-muted-foreground">Frete: {FREIGHT_CO2_PER_TKM.toLocaleString("pt-BR", { maximumFractionDigits: 5 })} kg CO₂e por tonelada·km (HGV a diesel, todas as categorias, carga média).</p>
+        </Card>
+
+        <Card id="setores" className="scroll-mt-20">
+          <CardHeader title="Perdas de referência por setor" description="Base da comparação com o setor. Sem fonte, o valor é uma estimativa declarada" />
+          <div className="overflow-x-auto border-t">
+            <Table>
+              <THead><TR><TH>Setor</TH><TH>Insumo</TH><TH className="text-right">Perda</TH><TH>Fonte</TH></TR></THead>
+              <TBody>
+                {Object.values(SECTORS).flatMap((sec) => (sec.templates as readonly FlowTemplate[]).map((t) => (
+                  <TR key={sec.label + t.name}>
+                    <TD className="whitespace-nowrap text-muted-foreground">{sec.label}</TD>
+                    <TD className="whitespace-nowrap font-medium">{t.name}</TD>
+                    <TD className="tabular text-right">{Math.round(t.benchmarkLoss * 1000) / 10}%</TD>
+                    <TD className="min-w-[280px] text-xs text-muted-foreground">
+                      {t.benchmarkSources?.length ? <>{t.benchmarkNote} · {t.benchmarkSources.map((id) => SOURCES[id].short).join("; ")}</> : <Badge tone="warning">estimativa</Badge>}
+                    </TD>
+                  </TR>
+                )))}
+              </TBody>
+            </Table>
+          </div>
         </Card>
 
         <Card id="fontes" className="scroll-mt-20">

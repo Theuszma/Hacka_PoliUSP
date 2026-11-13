@@ -17,6 +17,38 @@ O cadastro de empresas, pessoas, insumos, trocas e demandas usado na demonstraç
 | 7 | BRASIL. **Lei nº 12.305, de 2 de agosto de 2010**. Institui a Política Nacional de Resíduos Sólidos. Brasília, DF: Presidência da República, 2010. Disponível em: https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12305.htm. Acesso em: 13 nov. 2026. | Ordem de prioridade do art. 9º (não geração, redução, reutilização, reciclagem, tratamento e disposição final), usada para separar destinos circulares e não circulares. | `DESTINATIONS` em `src/lib/catalog.ts` |
 | 8 | ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. **NBR 10004**: resíduos sólidos: classificação. Rio de Janeiro: ABNT, 2004. | Classe I (perigoso) e Classe II: só destinatários licenciados recebem resíduo perigoso no matching. | `hazardous` em `src/lib/catalog.ts`, `src/lib/matching.ts` |
 
+## Perdas de referência por setor
+
+Usadas para comparar a perda da empresa com a do setor e para pré-preencher o cadastro (`src/lib/sectors.ts`). A tabela completa também está em **Como calculamos**.
+
+| Setor · insumo | Perda usada | O que a fonte diz | Fonte |
+|---|---|---|---|
+| Metalurgia · chapa de aço | 15% | Rendimento de corte de chapa (blanking) com média de 85%; rendimento da fabricação com aço de 85% | 9, 10 |
+| Metalurgia · tinta pó | 30% | Eficiência de primeira passada de 70% a 90% conforme a peça, e de 10% a 40% em peças vazadas, sem recuperação | 12, 13 |
+| Usinagem · barra de aço | 25% (estimativa) | Fabricação com aço perde 15% em média; um caso de torneamento de barra perdeu 41,2% em cavaco | 9, 11 |
+| Usinagem · barra de alumínio | 30% (estimativa) | Fabricação com alumínio perde 18% em média; mesmo caso de torneamento, 41,2% | 9, 11 |
+| Plásticos · resina PP e PEAD | 5% | Refugo tecnológico de 5% na injeção, totalmente reprocessado | 14 |
+| Têxtil · tecido e malha | 15% | "Approximately 15 per cent of the fabric" vira resíduo no corte e costura convencional | 15 |
+| Alimentos · farinha | 2,5% | Perdas de 2,39% (2017) e 2,63% (2018) da produção em 48 panificadoras industriais | 16 |
+| Alimentos · hortifrúti | 12% | Frutas e hortaliças na América Latina: 12% na distribuição; no Brasil, 6,28% no atacado e 8,76% a 12,56% no varejo | 17, 18 |
+| Moveleiro · chapa de MDF | 6% | Aproveitamento médio de 94,31% do MDF em 94 fábricas da Serra Gaúcha | 19 |
+| Moveleiro · verniz e seladora | 65% | Pistola convencional tem eficiência de transferência de só 20% a 40% | 20 |
+
+9. CULLEN, J. M.; ALLWOOD, J. M. Mapping the global flow of aluminum: from liquid aluminum to end-use goods. **Environmental Science & Technology**, v. 47, n. 7, p. 3057-3064, 2013. DOI: 10.1021/es304256s.
+10. FLINT, I. P.; ALLWOOD, J. M.; CABRERA SERRENHO, A. Scrap, carbon and cost savings from the adoption of flexible nested blanking. **The International Journal of Advanced Manufacturing Technology**, v. 104, p. 1171-1181, 2019. DOI: 10.1007/s00170-019-03995-6.
+11. INGARAO, G. et al. Subtractive versus mass conserving metal shaping technologies: an environmental impact comparison. **Journal of Cleaner Production**, v. 87, p. 862-873, 2015. DOI: 10.1016/j.jclepro.2014.10.018.
+12. BILLER, K. How sustainable are powder coatings? **Products Finishing**, 27 mar. 2026. Disponível em: https://www.pfonline.com/articles/how-sustainable-are-powder-coatings. Acesso em: 13 nov. 2026.
+13. MOHAR, F. How to boost first-pass transfer efficiency in powder coating. **The Fabricator**, 4 jan. 2016. Disponível em: https://www.thefabricator.com/thefabricator/article/finishing/how-to-boost-first-pass-transfer-efficiency-in-powder-coating. Acesso em: 13 nov. 2026.
+14. MANNHEIM, V.; SZABÓ, K.; LOVASNÉ AVATÓ, J. Energy efficiency and decarbonisation pathways in injection moulding: a life cycle assessment of end-of-life allocation methods. **Energies**, v. 19, n. 10, 2295, 2026. DOI: 10.3390/en19102295.
+15. RISSANEN, T. **Zero-waste fashion design**: a study at the intersection of cloth, fashion design and pattern cutting. 2013. Tese (Doutorado) – University of Technology Sydney, Sydney, 2013.
+16. GORYŃSKA-GOLDMANN, E. et al. How to prevent bread losses in the baking and confectionery industry? Measurement, causes, management and prevention. **Agriculture**, v. 11, n. 1, 19, 2021. DOI: 10.3390/agriculture11010019.
+17. FAO. **Global food losses and food waste**: extent, causes and prevention. Roma: FAO, 2011. Anexo 4. Disponível em: https://www.fao.org/docrep/014/mb060e/mb060e00.htm. Acesso em: 13 nov. 2026.
+18. HENZ, G. P.; PORPINO, G. Food losses and waste: how Brazil is facing this global challenge? **Horticultura Brasileira**, v. 35, p. 472-482, 2017. DOI: 10.1590/S0102-053620170402.
+19. HILLIG, É.; SCHNEIDER, V. E.; PAVONI, E. T. Geração de resíduos de madeira e derivados da indústria moveleira em função das variáveis de produção. **Produção**, v. 19, n. 2, p. 292-303, 2009. DOI: 10.1590/S0103-65132009000200006.
+20. NESCAUM. **Wood furniture**: the Clean Air Act Amendments of 1990 and pollution prevention opportunities. Boston: NESCAUM, [1996?]. Disponível em: https://www.nescaum.org/documents/woodfurnexsum.pdf. Acesso em: 13 nov. 2026.
+
+Observação: as fontes 12 e 13 são revistas técnicas do setor, não artigos revisados por pares. Não achamos estudo acadêmico com valor típico de overspray de tinta pó.
+
 ## Escolhas e premissas sem fonte externa
 
 São declaradas na tela, no "Como calculamos", e podem ser revistas.
@@ -26,7 +58,8 @@ São declaradas na tela, no "Como calculamos", e podem ser revistas.
 | Linha da DEFRA usada para aço | *Metal: steel cans* (a mais próxima de chapa de aço na tabela) | `factors.ts` |
 | Linha da DEFRA usada para têxteis | *Clothing* (a tabela não traz fio nem tecido; tende a superestimar) | `factors.ts` |
 | Fator de produção de tintas | 3,5 kg CO₂e/kg, **estimativa** (não há linha na tabela) | `factors.ts` |
-| Perda de referência por setor | **estimativas** para comparação; ainda precisam ser validadas com dados setoriais | `src/lib/sectors.ts` |
+| Perdas de referência sem fonte encontrada | fluido de corte 20%, pallets 30%, filme stretch 80%, caixas de papelão 40% a 50%, sacos e embalagens 50% a 60% | `src/lib/sectors.ts` |
+| Perda de referência na usinagem de barras | aço 25% e alumínio 30%, **estimativas** dentro da faixa das fontes 9 e 11 | `src/lib/sectors.ts` |
 | Taxa de realização das melhorias de processo | 85% da redução esperada | `src/lib/engine/premises.ts` |
 | Utilidade no MCI | X = 1 (vida útil média do setor) | `mci.ts` |
 | Limite para considerar tendência | 10% de variação acumulada | `stats.ts` |

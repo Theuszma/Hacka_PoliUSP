@@ -151,7 +151,7 @@ const companies: CompanySeed[] = [
     city: "São Caetano do Sul", lat: -23.6178, lng: -46.5695, contact: { name: "Cláudia Ferraz", email: "claudia@moveis.demo" },
     flows: [
       { name: "Chapa de MDF 18 mm", category: "madeira", unit: "kg", monthlyQty: 14000, unitCost: 3.9, lossRate: 0.16, destination: "aterro", destinationValue: -0.35, supplier: "Madeireira Grande ABC", leverText: "Plano de corte otimizado por software e estoque de sobras", leverReduction: 0.35 },
-      { name: "Verniz PU", category: "tinta", unit: "kg", monthlyQty: 260, unitCost: 46, lossRate: 0.22, destination: "classe1", destinationValue: -1.8, leverText: "Pistola HVLP e treinamento de aplicação", leverReduction: 0.4 },
+      { name: "Verniz PU", category: "tinta", unit: "kg", monthlyQty: 260, unitCost: 46, lossRate: 0.68, destination: "classe1", destinationValue: -1.8, leverText: "Pistola HVLP e treinamento de aplicação", leverReduction: 0.4 },
     ],
     inputs: [],
   },
