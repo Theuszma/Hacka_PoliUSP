@@ -50,7 +50,7 @@ function Content() {
         </Card>
 
         <Card id="fontes" className="scroll-mt-20">
-          <CardHeader title="Referências" />
+          <CardHeader title="Referências" description="Lista em ABNT, com o que cada fonte alimenta, em docs/REFERENCIAS.md no repositório" />
           <ol className="grid gap-2 px-5 pb-5 text-[13px] text-muted-foreground">
             {Object.values(SOURCES).map((s) => (
               <li key={s.id}>{"url" in s ? <a href={s.url} target="_blank" rel="noreferrer" className="hover:text-foreground hover:underline">{s.citation}</a> : s.citation}</li>

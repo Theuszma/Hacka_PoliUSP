@@ -136,6 +136,8 @@ Fica em `src/lib/engine/` e em `src/lib/metrics.ts`. São funções puras e test
 | Tendência | inclinação de Theil-Sen | Sen (1968) |
 | Troca de resíduo | (preço pago − valor do destino) × volume − frete | simbiose industrial, Chertow (2000) |
 
+A lista completa de fontes em ABNT, com o que cada uma alimenta e as premissas que não têm fonte externa, está em [docs/REFERENCIAS.md](docs/REFERENCIAS.md).
+
 Os fatores foram tirados da planilha oficial *Greenhouse gas reporting: conversion factors 2024* (conjunto condensado v1.1), que está em `docs/fontes/`. Aço usa a linha *Metal: steel cans* e têxtil usa *Clothing*, os equivalentes mais próximos da tabela. Tintas não têm linha na tabela, então o fator é uma estimativa e aparece marcado assim. As perdas de referência por setor (`src/lib/sectors.ts`) também são estimativas e ainda precisam ser validadas com dados do setor.
 
 ### Próximos passos para produção
