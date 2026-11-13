@@ -4,6 +4,8 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { flowMetrics } from "../src/lib/metrics";
+import { hashPassword } from "../src/lib/password";
+import { lastMonths } from "../src/lib/history";
 
 const db = new PrismaClient();
 
@@ -22,7 +24,7 @@ type CompanySeed = {
 
 const companies: CompanySeed[] = [
   {
-    key: "ipiranga", name: "Metalúrgica Ipiranga", initials: "MI", sector: "Estamparia e pintura de peças metálicas",
+    key: "ipiranga", name: "Metalúrgica Ipiranga", initials: "MI", sector: "metalurgia",
     size: "Pequena", employees: 38, city: "São Bernardo do Campo", lat: -23.6914, lng: -46.5646,
     contact: { name: "Rosana Alves", email: "rosana@ipiranga.demo" },
     flows: [
@@ -38,7 +40,7 @@ const companies: CompanySeed[] = [
     ],
   },
   {
-    key: "rudge", name: "Ferragens Rudge Ramos", initials: "FR", sector: "Arruelas, calços e ferragens", size: "Micro", employees: 14,
+    key: "rudge", name: "Ferragens Rudge Ramos", initials: "FR", sector: "metalurgia", size: "Micro", employees: 14,
     city: "São Bernardo do Campo", lat: -23.661, lng: -46.572, contact: { name: "Jorge Batista", email: "jorge@rudge.demo" },
     flows: [
       { name: "Óleo de estampagem", category: "fluido", unit: "L", monthlyQty: 200, unitCost: 16, lossRate: 0.4, destination: "classe1", destinationValue: -2.5, supplier: "Química ABC" },
@@ -48,7 +50,7 @@ const companies: CompanySeed[] = [
     ],
   },
   {
-    key: "lubri", name: "Lubrirrefino Diadema", initials: "LD", sector: "Rerrefino de óleos (licença ANP)", size: "Média", employees: 120,
+    key: "lubri", name: "Lubrirrefino Diadema", initials: "LD", sector: "ambiental", size: "Média", employees: 120,
     city: "Diadema", lat: -23.6862, lng: -46.6228, contact: { name: "Sônia Prado", email: "sonia@lubri.demo" },
     flows: [],
     inputs: [
@@ -56,7 +58,7 @@ const companies: CompanySeed[] = [
     ],
   },
   {
-    key: "gerty", name: "Marcenaria Escola Vila Gerty", initials: "VG", sector: "Cooperativa de marcenaria", size: "Micro", employees: 9,
+    key: "gerty", name: "Marcenaria Escola Vila Gerty", initials: "VG", sector: "moveleiro", size: "Micro", employees: 9,
     city: "São Caetano do Sul", lat: -23.6229, lng: -46.5548, contact: { name: "Elaine Costa", email: "elaine@gerty.demo" },
     flows: [],
     inputs: [
@@ -64,7 +66,7 @@ const companies: CompanySeed[] = [
     ],
   },
   {
-    key: "reciclape", name: "Recicla PE Mauá", initials: "RP", sector: "Reciclagem de plásticos", size: "Pequena", employees: 31,
+    key: "reciclape", name: "Recicla PE Mauá", initials: "RP", sector: "ambiental", size: "Pequena", employees: 31,
     city: "Mauá", lat: -23.6677, lng: -46.4613, contact: { name: "Diego Nunes", email: "diego@reciclape.demo" },
     flows: [],
     inputs: [
@@ -72,7 +74,7 @@ const companies: CompanySeed[] = [
     ],
   },
   {
-    key: "taboao", name: "Estamparia Taboão", initials: "ET", sector: "Estamparia automotiva", size: "Média", employees: 145,
+    key: "taboao", name: "Estamparia Taboão", initials: "ET", sector: "metalurgia", size: "Média", employees: 145,
     city: "São Bernardo do Campo", lat: -23.712, lng: -46.59, contact: { name: "Paulo Ramos", email: "paulo@taboao.demo" },
     flows: [
       { name: "Bobina de aço 2,0 mm", category: "aco", unit: "kg", monthlyQty: 25000, unitCost: 7.0, lossRate: 0.15, destination: "sucata", destinationValue: 1.1, supplier: "Usina via distribuidor" },
@@ -81,7 +83,7 @@ const companies: CompanySeed[] = [
     inputs: [],
   },
   {
-    key: "autopecas", name: "Autopeças Santo André", initials: "AS", sector: "Usinagem de peças automotivas", size: "Pequena", employees: 62,
+    key: "autopecas", name: "Autopeças Santo André", initials: "AS", sector: "usinagem", size: "Pequena", employees: 62,
     city: "Santo André", lat: -23.6639, lng: -46.5383, contact: { name: "Marcos Lima", email: "marcos@autopecas.demo" },
     flows: [
       { name: "Pallets PBR", category: "madeira", unit: "kg", monthlyQty: 3000, unitCost: 2.8, lossRate: 0.5, destination: "aterro", destinationValue: -0.35 },
@@ -91,7 +93,7 @@ const companies: CompanySeed[] = [
     inputs: [],
   },
   {
-    key: "confeccoes", name: "Confecções Bom Retiro", initials: "CB", sector: "Confecção de roupas", size: "Pequena", employees: 47,
+    key: "confeccoes", name: "Confecções Bom Retiro", initials: "CB", sector: "textil", size: "Pequena", employees: 47,
     city: "São Paulo", lat: -23.5269, lng: -46.6407, contact: { name: "Hana Kim", email: "hana@confeccoes.demo" },
     flows: [
       { name: "Tecido de algodão", category: "textil", unit: "kg", monthlyQty: 6000, unitCost: 32, lossRate: 0.2, destination: "aterro", destinationValue: -0.3, leverText: "Encaixe digital de moldes e reaproveitamento de retalhos", leverReduction: 0.3 },
@@ -99,7 +101,7 @@ const companies: CompanySeed[] = [
     inputs: [],
   },
   {
-    key: "plasticos", name: "Plásticos Diadema", initials: "PD", sector: "Injeção de peças plásticas", size: "Pequena", employees: 55,
+    key: "plasticos", name: "Plásticos Diadema", initials: "PD", sector: "plasticos", size: "Pequena", employees: 55,
     city: "Diadema", lat: -23.695, lng: -46.61, contact: { name: "Ricardo Sato", email: "ricardo@plasticos.demo" },
     flows: [
       { name: "Resina PP", category: "plastico", unit: "kg", monthlyQty: 20000, unitCost: 9.5, lossRate: 0.08, destination: "reuso", destinationValue: 0, leverText: "Ajustar parâmetros de injeção e manutenção preventiva dos moldes", leverReduction: 0.4 },
@@ -109,7 +111,7 @@ const companies: CompanySeed[] = [
     ],
   },
   {
-    key: "panificadora", name: "Panificadora Industrial Santo André", initials: "PS", sector: "Pães e massas", size: "Pequena", employees: 70,
+    key: "panificadora", name: "Panificadora Industrial Santo André", initials: "PS", sector: "alimentos", size: "Pequena", employees: 70,
     city: "Santo André", lat: -23.6553, lng: -46.53, contact: { name: "Luiza Mendes", email: "luiza@panificadora.demo" },
     flows: [
       { name: "Farinha de trigo", category: "organico", unit: "kg", monthlyQty: 30000, unitCost: 3.1, lossRate: 0.06, destination: "aterro", destinationValue: -0.2 },
@@ -117,7 +119,7 @@ const companies: CompanySeed[] = [
     inputs: [],
   },
   {
-    key: "composta", name: "Composta ABC", initials: "CA", sector: "Compostagem e biogás", size: "Micro", employees: 12,
+    key: "composta", name: "Composta ABC", initials: "CA", sector: "ambiental", size: "Micro", employees: 12,
     city: "Mauá", lat: -23.6845, lng: -46.448, contact: { name: "Tiago Freitas", email: "tiago@composta.demo" },
     flows: [],
     inputs: [
@@ -149,14 +151,36 @@ async function main() {
   await db.user.deleteMany();
   await db.company.deleteMany();
 
+  await db.notification.deleteMany();
+  await db.session.deleteMany();
+  const passwordHash = await hashPassword("elo2026");
+  const months = lastMonths(12);
+  let seed = 7;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
   const ids: Record<string, { id: string; userId: string; flows: Record<string, string>; inputs: Record<string, string> }> = {};
   for (const c of companies) {
     const company = await db.company.create({
-      data: { name: c.name, initials: c.initials, sector: c.sector, size: c.size, employees: c.employees, city: c.city, lat: c.lat, lng: c.lng },
+      data: { name: c.name, initials: c.initials, sector: c.sector, size: c.size, employees: c.employees, city: c.city, lat: c.lat, lng: c.lng, onboardedAt: new Date(Date.now() - 200 * 86400000) },
     });
-    const user = await db.user.create({ data: { name: c.contact.name, email: c.contact.email, role: "COMPANY", companyId: company.id } });
+    const user = await db.user.create({ data: { name: c.contact.name, email: c.contact.email, role: "COMPANY", companyId: company.id, passwordHash, isDemo: true } });
     const flows: Record<string, string> = {};
-    for (const f of c.flows) flows[f.category] = (await db.materialFlow.create({ data: { ...f, companyId: company.id } })).id;
+    for (const f of c.flows) {
+      // 12 meses de histórico com variação sazonal e ruído; o mês atual é o valor cadastrado
+      const records = months.map((month, i) => {
+        const last = i === months.length - 1;
+        const season = 1 + 0.08 * Math.sin((i / 12) * 2 * Math.PI);
+        return {
+          month,
+          monthlyQty: last ? f.monthlyQty : Math.round(f.monthlyQty * season * (0.92 + rand() * 0.16)),
+          unitCost: last ? f.unitCost : +(f.unitCost * (0.94 + (i / 12) * 0.06)).toFixed(2),
+          lossRate: last ? f.lossRate : Math.min(1, +(f.lossRate * (0.9 + rand() * 0.22)).toFixed(4)),
+          destination: f.destination,
+          destinationValue: f.destinationValue,
+        };
+      });
+      flows[f.category] = (await db.materialFlow.create({ data: { ...f, companyId: company.id, records: { create: records } } })).id;
+    }
     const inputs: Record<string, string> = {};
     for (const d of c.inputs) inputs[d.category] = (await db.inputDemand.create({ data: { ...d, licensed: d.licensed ?? false, companyId: company.id } })).id;
     ids[c.key] = { id: company.id, userId: user.id, flows, inputs };
@@ -165,7 +189,7 @@ async function main() {
   const eng: Record<string, string> = {};
   for (const e of engineers) {
     const { name, email, lat, lng, ...profile } = e as typeof e & { lat?: number; lng?: number };
-    const user = await db.user.create({ data: { name, email, role: "ENGINEER" } });
+    const user = await db.user.create({ data: { name, email, role: "ENGINEER", passwordHash, isDemo: true } });
     const created = await db.engineer.create({
       data: { ...profile, userId: user.id, lat: lat ?? -23.5613, lng: lng ?? -46.7307 }, // padrão: Cidade Universitária
     });
@@ -231,6 +255,13 @@ async function main() {
         ],
       },
     },
+  });
+
+  await db.notification.createMany({
+    data: [
+      { userId: ids.ipiranga.userId, title: "Estamparia Taboão propôs uma troca", body: "Bobina de aço 2,0 mm: 2.500 kg/mês", href: "/app/marketplace", createdAt: new Date(Date.now() - 3 * 3600000) },
+      { userId: ids.ipiranga.userId, title: "7 novas oportunidades de simbiose", body: "Empresas a até 40 km querem seus resíduos", href: "/app/marketplace", createdAt: new Date(Date.now() - 26 * 3600000) },
+    ],
   });
 
   console.log(`Seed concluído: ${companies.length} empresas, ${engineers.length} engenheiros.`);

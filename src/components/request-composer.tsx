@@ -1,122 +1,49 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { Send } from "lucide-react";
+import { useActionState, useState } from "react";
 import { createRequest, type ActionState } from "@/app/actions";
-import { CATEGORIES } from "@/lib/catalog";
-import { SubmitButton } from "./client";
-import { Avatar } from "./ui";
+import { CATEGORIES, CATEGORY_KEYS } from "@/lib/catalog";
+import { SubmitButton } from "./forms";
+import { Button, type ButtonProps } from "./ui/button";
+import { Field, Input, Select, Textarea } from "./ui/form";
+import { Dialog, DialogClose, DialogContent, DialogTrigger } from "./ui/overlay";
 
-export interface EngineerCard {
-  id: string;
-  name: string;
-  initials: string;
-  kind: string;
-  course: string;
-  bio: string;
-  skills: string[];
-  matchedSkills: string[];
-  hoursPerWeek: number;
-  rating: number;
-  helpsWith: string | null;
-  score: number;
+export interface ComposerDefaults { title: string; category: string; briefing: string; hours: number }
+
+function ComposerForm({ defaults, invited }: { defaults: ComposerDefaults; invited?: { id: string; name: string } }) {
+  const [state, action] = useActionState<ActionState, FormData>(createRequest, null);
+  const e = state?.errors ?? {};
+  return (
+    <form action={action} className="grid gap-4">
+      {invited && <input type="hidden" name="invitedId" value={invited.id} />}
+      <Field label="Título" htmlFor="rq-title" error={e.title}><Input id="rq-title" name="title" defaultValue={defaults.title} /></Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Área" htmlFor="rq-cat" error={e.category}>
+          <Select id="rq-cat" name="category" defaultValue={defaults.category}>{CATEGORY_KEYS.map((k) => <option key={k} value={k}>{CATEGORIES[k].label}</option>)}</Select>
+        </Field>
+        <Field label="Horas estimadas" htmlFor="rq-h" error={e.estimatedHours}><Input id="rq-h" name="estimatedHours" type="number" min={2} max={200} defaultValue={defaults.hours} /></Field>
+      </div>
+      <Field label="Briefing" htmlFor="rq-b" error={e.briefing} hint="Gerado a partir do seu diagnóstico. Edite à vontade.">
+        <Textarea id="rq-b" name="briefing" rows={9} defaultValue={defaults.briefing} className="font-mono text-[12.5px] leading-relaxed" />
+      </Field>
+      {state?.message && !state.ok && <p className="text-[13px] text-danger">{state.message}</p>}
+      <div className="flex justify-end gap-2">
+        <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
+        <SubmitButton pendingText="Publicando…"><Send />{invited ? `Convidar ${invited.name.split(" ")[0]}` : "Publicar demanda"}</SubmitButton>
+      </div>
+    </form>
+  );
 }
 
-export function RequestComposer({ engineers, defaults }: {
-  engineers: EngineerCard[];
-  defaults: { title: string; briefing: string; category: string };
-}) {
-  const [state, action] = useActionState<ActionState, FormData>(createRequest, null);
+export function RequestComposer({ defaults, invited, label, ...btn }: { defaults: ComposerDefaults; invited?: { id: string; name: string }; label: string } & ButtonProps) {
   const [open, setOpen] = useState(false);
-  const [invited, setInvited] = useState<EngineerCard | null>(null);
-  const formRef = useRef<HTMLDivElement>(null);
-
-  const start = (e: EngineerCard | null) => {
-    setInvited(e);
-    setOpen(true);
-    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  };
-  const err = (k: string) => state?.errors?.[k] && <p className="field-error">{state.errors[k]}</p>;
-
   return (
-    <div className="grid gap-6">
-      <div ref={formRef} className="scroll-mt-24">
-        {open ? (
-          <form action={action} className="card grid gap-4 border-accent">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="label">Pedido de apoio técnico</p>
-                <h2 className="text-lg font-bold">{invited ? `Convidar ${invited.name}` : "Publicar demanda para toda a rede"}</h2>
-                <p className="text-sm text-muted">O briefing foi montado a partir do seu diagnóstico. Ajuste o que quiser antes de enviar.</p>
-              </div>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>Cancelar</button>
-            </div>
-            <input type="hidden" name="invitedId" value={invited?.id ?? ""} />
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px_140px]">
-              <div>
-                <label className="field-label" htmlFor="rq-title">Título</label>
-                <input id="rq-title" name="title" className="input" defaultValue={defaults.title} />
-                {err("title")}
-              </div>
-              <div>
-                <label className="field-label" htmlFor="rq-cat">Área do problema</label>
-                <select id="rq-cat" name="category" className="input" defaultValue={defaults.category}>
-                  {Object.entries(CATEGORIES).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="field-label" htmlFor="rq-hours">Horas estimadas</label>
-                <input id="rq-hours" name="estimatedHours" type="number" min={2} max={200} className="input" defaultValue={12} />
-                {err("estimatedHours")}
-              </div>
-            </div>
-            <div>
-              <label className="field-label" htmlFor="rq-brief">Briefing</label>
-              <textarea id="rq-brief" name="briefing" rows={12} className="input font-mono text-xs leading-relaxed" defaultValue={defaults.briefing} />
-              {err("briefing")}
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <SubmitButton pendingText="Publicando…">{invited ? "Enviar convite" : "Publicar demanda"}</SubmitButton>
-              {state?.message && <p className="text-sm text-bad">{state.message}</p>}
-            </div>
-          </form>
-        ) : (
-          <div className="card flex flex-wrap items-center justify-between gap-4">
-            <p className="max-w-xl text-sm text-muted">
-              Publique uma demanda para todos os engenheiros da rede ou convide diretamente alguém da lista. Estudantes atuam com
-              supervisão de mentores e contam as horas como extensão universitária.
-            </p>
-            <button type="button" className="btn btn-primary" onClick={() => start(null)}>Pedir apoio técnico</button>
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {engineers.map((e, i) => (
-          <article key={e.id} className={`card grid content-start gap-3 ${i === 0 && e.score > 0 ? "border-accent shadow-sm" : ""}`}>
-            {i === 0 && e.score > 0 && <p className="text-[11px] font-bold uppercase tracking-wider text-accent">Melhor match para sua maior perda</p>}
-            <div className="flex items-start gap-3">
-              <Avatar text={e.initials} tone={e.kind === "MENTOR" ? "ochre" : "ink"} />
-              <div className="min-w-0">
-                <p className="font-semibold">{e.name}</p>
-                <p className="text-xs text-muted">{e.course}</p>
-              </div>
-            </div>
-            <p className="text-sm text-muted">{e.bio}</p>
-            <div className="flex flex-wrap gap-1">
-              {e.skills.map((s) => <span key={s} className={`tag ${e.matchedSkills.includes(s) ? "tag-hit" : ""}`}>{s}</span>)}
-            </div>
-            <dl className="grid grid-cols-3 gap-2 text-xs">
-              <div><dt className="text-muted">Perfil</dt><dd className="font-semibold">{e.kind === "MENTOR" ? "Mentor(a)" : "Estudante"}</dd></div>
-              <div><dt className="text-muted">Disponível</dt><dd className="num">{e.hoursPerWeek} h/sem</dd></div>
-              <div><dt className="text-muted">Avaliação</dt><dd className="num">{e.rating.toFixed(1)} / 5</dd></div>
-            </dl>
-            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs text-muted">{e.helpsWith ? `Pode ajudar com: ${e.helpsWith}` : "Sem relação direta com seus insumos"}</span>
-              <button type="button" className={`btn btn-sm ${i === 0 && e.score > 0 ? "btn-primary" : ""}`} onClick={() => start(e)}>Convidar</button>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><Button {...btn}>{label}</Button></DialogTrigger>
+      <DialogContent wide title={invited ? `Convidar ${invited.name}` : "Nova demanda de engenharia"} description={invited ? "A pessoa recebe o convite e a demanda também fica visível para a rede." : "A demanda fica visível para estudantes e mentores da rede, ordenada por aderência."}>
+        {open && <ComposerForm defaults={defaults} invited={invited} />}
+      </DialogContent>
+    </Dialog>
   );
 }

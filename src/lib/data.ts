@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "./db";
+import { totals } from "./metrics";
 import { findSymbiosisMatches, type DemandWithCompany, type FlowWithCompany } from "./matching";
 
 const place = { select: { id: true, name: true, lat: true, lng: true } } as const;
@@ -27,4 +28,16 @@ export function companyExchanges(companyId: string) {
 
 export async function engineersWithUsers() {
   return db.engineer.findMany({ include: { user: true } });
+}
+
+/** Série mensal do diagnóstico da empresa, a partir das fotografias mensais de cada fluxo. */
+export async function companyHistory(companyId: string, months: string[]) {
+  const records = await db.monthlyRecord.findMany({
+    where: { flow: { companyId }, month: { in: months } },
+    include: { flow: { select: { id: true, name: true, category: true, unit: true } } },
+  });
+  return months.map((month) => {
+    const flows = records.filter((r) => r.month === month).map((r) => ({ ...r, id: r.flow.id, name: r.flow.name, category: r.flow.category, unit: r.flow.unit }));
+    return { month, hasData: flows.length > 0, ...totals(flows) };
+  });
 }

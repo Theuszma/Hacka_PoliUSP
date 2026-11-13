@@ -18,3 +18,6 @@ export function relativeDate(d: Date, now = new Date()): string {
   if (days < 30) return `há ${days} dia${days > 1 ? "s" : ""}`;
   return d.toLocaleDateString("pt-BR");
 }
+
+/** Primeira letra minúscula, preservando siglas no resto (ex.: "Chapa SAE" → "chapa SAE"). */
+export const lowerFirst = (s: string) => (s ? s[0].toLowerCase() + s.slice(1) : s);

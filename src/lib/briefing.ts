@@ -1,3 +1,4 @@
+import { sector } from "./sectors";
 import { category, destination } from "./catalog";
 import { money, num, pct, tons } from "./format";
 import { rankByLoss, totals, type FlowInput } from "./metrics";
@@ -20,7 +21,7 @@ export function buildBriefing(company: CompanyInfo, flows: (FlowInput & { leverT
       `${i + 1}. ${flow.name}: perda de ${pct(flow.lossRate)} (${num(metrics.wasteQty)} ${flow.unit}/mês), destino: ${destination(flow.destination).label}, prejuízo de ${money(metrics.loss)}/mês.`,
   );
   return [
-    `${company.name} · ${company.sector}`,
+    `${company.name} · ${sector(company.sector).label}`,
     `${company.size} empresa, ${company.employees} funcionários, ${company.city}.`,
     "",
     "Situação atual",

@@ -11,18 +11,21 @@ Pequenas e médias indústrias perdem parte grande do que compram como resíduo 
 O **Elo** é uma plataforma web com dois lados:
 
 **Indústria (PME)**
-1. **Insumos e resíduos**: cadastra cada material comprado, a perda, o destino do resíduo, fornecedor e lote.
-2. **Painel**: prejuízo mensal com resíduos, taxa de desperdício, CO₂e no material perdido e índice de circularidade.
-3. **Simulador**: cenários "e se" combinando melhorias de processo e trocas de resíduo, com economia anual e CO₂e evitado.
-4. **Simbiose industrial**: o motor de matching cruza os resíduos de todas as empresas com o que as outras aceitam como insumo, por material, volume, capacidade, licença ambiental e distância (com frete descontado). Dá para propor, aceitar e recusar trocas.
-5. **Engenheiros**: recomendação de estudantes e mentores por especialidade, ponderada pelo prejuízo de cada insumo. O pedido de apoio já sai com um briefing gerado a partir do diagnóstico.
+1. **Onboarding guiado**: dados da empresa, insumos sugeridos pelo setor e materiais que aceita receber.
+2. **Insumos e resíduos**: cadastro, edição e importação de planilha CSV; cada alteração entra no histórico mensal.
+3. **Visão geral**: prejuízo mensal, taxa de desperdício, CO₂e e circularidade, com variação mês a mês, tendência de 12 meses, comparação com a perda média do setor e oportunidades priorizadas.
+4. **Simulador**: cenários "e se" combinando melhorias de processo e trocas de resíduo, com economia anual e CO₂e evitado.
+5. **Marketplace de resíduos**: o motor de matching cruza os resíduos de todas as empresas com o que as outras aceitam como insumo, por material, volume, capacidade, licença ambiental e distância (com frete descontado). Dá para propor, aceitar e recusar trocas.
+6. **Engenheiros**: recomendação de estudantes e mentores por especialidade, ponderada pelo prejuízo de cada insumo. O pedido de apoio já sai com um briefing gerado a partir do diagnóstico.
 
 **Engenheiro ou estudante**
 1. **Demandas abertas** ordenadas pela aderência às suas áreas e pelo impacto.
 2. **Demanda**: briefing, linha do tempo com mensagens, assumir, concluir registrando resultado e economia validada.
 3. **Perfil**: horas de extensão e economia gerada para as empresas.
 
-**Impacto da rede**: resíduo desviado do aterro, valor gerado, CO₂e evitado, horas de engenharia e o potencial ainda não aproveitado, tudo calculado a partir do banco.
+**Notificações** avisam propostas, respostas, convites e mensagens.
+
+**Impacto da rede** (página pública e interna): resíduo desviado do aterro, valor gerado, CO₂e evitado, horas de engenharia e o potencial ainda não aproveitado, tudo calculado a partir do banco.
 
 ## Como rodar
 
@@ -34,7 +37,16 @@ npm run setup     # instala dependências, cria o banco SQLite e carrega os dado
 npm run dev       # http://localhost:3000
 ```
 
-Na tela inicial, escolha **Entrar como indústria** (Metalúrgica Ipiranga) ou **Entrar como engenheira** (Ana Ribeiro). Para voltar o banco ao estado inicial: `npm run db:reset`.
+Atualizando de uma versão anterior? O modelo de dados mudou: apague `prisma/dev.db` e rode `npm run setup` de novo.
+
+**Contas**
+
+- Crie uma conta em `/cadastro` (indústria ou engenheiro) e siga o onboarding guiado: a indústria escolhe o setor, recebe os insumos típicos com a perda de referência e sai com o diagnóstico pronto.
+- Ou use as contas de demonstração (botões em `/entrar` e "Ver demonstração" na página inicial). Senha de todas: `elo2026`.
+  - Indústria: `rosana@ipiranga.demo` (Metalúrgica Ipiranga)
+  - Engenheira: `ana@poli.demo` (Ana Ribeiro, estudante)
+
+Para voltar o banco ao estado inicial: `npm run db:reset`.
 
 Outros comandos:
 
@@ -51,7 +63,9 @@ Outros comandos:
 | Aplicação | Next.js 15 (App Router, Server Components e Server Actions) + React 19 + TypeScript |
 | Banco | Prisma ORM + SQLite local (troque o `provider` para `postgresql` em produção) |
 | Validação | Zod nas Server Actions |
-| Interface | Tailwind CSS com tokens próprios, modo claro e escuro |
+| Autenticação | Contas próprias: senha com scrypt, sessão em cookie httpOnly |
+| Interface | Tailwind CSS com design system próprio (tokens, modo claro e escuro), Radix UI, Lucide, Recharts, Sonner |
+| Planilhas | PapaParse (importação CSV no navegador) |
 | Testes | Vitest |
 
 ## Arquitetura
@@ -60,9 +74,11 @@ Outros comandos:
 src/
   app/                 rotas (App Router)
     actions.ts         todas as mutações (Server Actions, validadas com Zod)
-    entrar/            escolha de perfil
-    empresa/           painel, insumos, simulador, simbiose, engenheiros, pedidos
-    engenheiro/        demandas abertas, minhas demandas, perfil
+    page.tsx           página inicial do produto
+    (auth)/            entrar e cadastro
+    onboarding/        configuração guiada da empresa e do engenheiro
+    app/               área da indústria: visão geral, insumos, simulador, marketplace, engenheiros, demandas, configurações
+    eng/               área do engenheiro: demandas abertas, minhas demandas, perfil e horas
     demandas/[id]/     detalhe compartilhado da demanda
     impacto/           indicadores da rede
   lib/
@@ -71,8 +87,12 @@ src/
     matching.ts        motores de simbiose e de engenheiro × problema (funções puras)
     briefing.ts        geração do briefing do pedido de apoio
     data.ts            consultas ao banco usadas por várias páginas
-    auth.ts            sessão da demonstração
-  components/          UI (shell, gráficos, mapa da rede, formulários, simulador)
+    auth.ts            sessões (cookie httpOnly + tabela Session), senhas com scrypt
+    sectors.ts         setores, insumos típicos e perdas de referência (benchmark)
+    network.ts         indicadores agregados da rede
+  components/
+    ui/                design system (botões, formulários, cards, tabelas, diálogos, menus, abas)
+    ...                shell, gráficos (Recharts), mapa da rede, onboarding, simulador
 prisma/
   schema.prisma        modelo de dados
   seed.ts              rede piloto fictícia no ABC Paulista
@@ -83,7 +103,9 @@ O núcleo de regras (`metrics.ts` e `matching.ts`) não depende de banco nem de 
 
 ### Modelo de dados
 
-- **Company**: PME com localização (lat/lng).
+- **User**, **Session**, **Notification**: contas, sessões e avisos.
+- **Company**: PME com setor, porte e localização (lat/lng).
+- **MonthlyRecord**: fotografia mensal de cada insumo (histórico e tendência).
 - **MaterialFlow**: insumo e sua perda mensal, destino do resíduo, fornecedor e lote.
 - **InputDemand**: o que uma empresa aceita receber como insumo, a que preço, quanto e se tem licença para resíduo perigoso.
 - **Exchange**: proposta de troca entre duas empresas (proposta → aceita/recusada).
@@ -106,7 +128,7 @@ Fatores de emissão e parâmetros de frete estão em `src/lib/catalog.ts` e são
 
 ### Próximos passos para produção
 
-- Autenticação real (Supabase Auth ou NextAuth) no lugar da escolha de perfil.
+- Login social e convite de colegas para a mesma empresa.
 - Postgres com PostGIS para busca geográfica.
 - Importar insumos das notas fiscais de compra (XML da NF-e) e destinos do Manifesto de Transporte de Resíduos (MTR/SINIR).
 - Fatores de emissão de base auditada e relatório de horas de extensão para a Pró-Reitoria.

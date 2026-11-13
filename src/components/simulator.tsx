@@ -1,127 +1,121 @@
 "use client";
 
-import Link from "next/link";
+import { RotateCcw } from "lucide-react";
 import { useMemo, useState } from "react";
-import { money, num, pct, tons } from "@/lib/format";
+import { money, money2, num, pct, tons } from "@/lib/format";
 import { flowMetrics, totals, type FlowInput, type FlowScenario } from "@/lib/metrics";
-import { Kpi } from "./ui";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Card, CardHeader } from "./ui/card";
+import { cn } from "./ui/cn";
 
 export interface SimFlow extends FlowInput {
   leverText: string | null;
   leverReduction: number | null;
-  partner: { name: string; distanceKm: number; netUnitValue: number; substitution: number } | null;
+  partner: { name: string; distanceKm: number; netUnitValue: number; substitution: number; volume: number } | null;
 }
 
-type State = Record<string, { reduction: number; partner: boolean }>;
+interface S { reduction: number; partner: boolean }
 
 export function Simulator({ flows }: { flows: SimFlow[] }) {
-  const [state, setState] = useState<State>({});
+  const [state, setState] = useState<Record<string, S>>({});
+  const get = (id: string): S => ({ ...{ reduction: 0, partner: false }, ...state[id] });
+  const set = (id: string, patch: Partial<S>) => setState((s) => ({ ...s, [id]: { ...{ reduction: 0, partner: false }, ...s[id], ...patch } }));
 
   const scenarios = useMemo(() => {
     const out: Record<string, FlowScenario> = {};
     for (const f of flows) {
-      const s = state[f.id];
-      if (!s) continue;
-      out[f.id] = {
-        reduction: s.reduction,
-        alternative: s.partner && f.partner ? { destinationValue: f.partner.netUnitValue, substitution: f.partner.substitution } : null,
-      };
+      const s = get(f.id);
+      out[f.id] = { reduction: s.reduction, alternative: s.partner && f.partner ? { destinationValue: f.partner.netUnitValue, substitution: f.partner.substitution } : null };
     }
     return out;
-  }, [flows, state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, flows]);
 
-  const before = totals(flows);
-  const after = totals(flows, scenarios);
-  const yearly = (before.loss - after.loss) * 12;
-  const co2 = (before.netCo2 - after.netCo2) * 12;
+  const base = totals(flows);
+  const sim = totals(flows, scenarios);
+  const saving = base.loss - sim.loss;
+  const co2 = (base.netCo2 - sim.netCo2);
+  const changed = Object.values(state).some((s) => s.reduction > 0 || s.partner);
 
-  const set = (id: string, patch: Partial<State[string]>) =>
-    setState((s) => ({ ...s, [id]: { ...{ reduction: 0, partner: false }, ...s[id], ...patch } }));
-
-  const applyTypical = () => {
-    const next: State = {};
-    for (const f of flows) next[f.id] = { reduction: f.leverReduction ?? 0, partner: !!f.partner };
-    setState(next);
-  };
+  const applyAll = () => setState(Object.fromEntries(flows.map((f) => [f.id, { reduction: f.leverReduction ?? 0, partner: !!f.partner && f.partner.netUnitValue > f.destinationValue }])));
 
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn btn-primary" onClick={applyTypical}>Aplicar melhorias típicas</button>
-        <button type="button" className="btn" onClick={() => setState({})}>Zerar cenário</button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Kpi tone="good" label="Economia estimada" value={money(yearly)} unit="/ano" hint="comparada à operação atual" />
-        <Kpi label="CO₂e evitado" value={tons(co2)} unit="/ano" hint="menos desperdício e menos matéria-prima virgem nos parceiros" />
-        <Kpi label="Circularidade" value={`${pct(before.circularity)} → ${pct(after.circularity)}`} hint="parcela do resíduo que volta para a economia" />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <section className="card min-w-0">
-          <h2 className="mb-2 text-lg font-bold">Alavancas por insumo</h2>
-          <div className="divide-y divide-line">
-            {flows.map((f) => {
-              const s = state[f.id] ?? { reduction: 0, partner: false };
-              const m0 = flowMetrics(f);
-              const m1 = flowMetrics(f, scenarios[f.id]);
-              const gain = (m0.loss - m1.loss) * 12;
-              return (
-                <div key={f.id} className="grid gap-3 py-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:items-center">
-                  <div className="min-w-0">
-                    <p className="font-semibold">{f.name}</p>
-                    <p className="text-xs text-muted">
-                      {f.leverText ?? "Melhoria de processo a definir com um engenheiro"}
-                      {f.leverReduction ? ` · típico: −${pct(f.leverReduction)}` : ""}
-                    </p>
-                  </div>
-                  <div className="grid gap-2">
-                    <label htmlFor={`r-${f.id}`} className="flex justify-between gap-2 text-xs font-semibold text-muted">
-                      <span>Reduzir perda em <span className="num text-ink">{pct(s.reduction)}</span></span>
-                      <span className="num">{pct(f.lossRate, 1)} → <span className="text-ink">{pct(m1.lossRate, 1)}</span></span>
-                    </label>
-                    <input id={`r-${f.id}`} type="range" min={0} max={80} step={5} value={Math.round(s.reduction * 100)}
-                      onChange={(e) => set(f.id, { reduction: Number(e.target.value) / 100 })} className="w-full accent-[rgb(var(--accent))]" />
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      {f.partner ? (
-                        <label className="flex items-center gap-2 text-xs">
-                          <input type="checkbox" checked={s.partner} onChange={(e) => set(f.id, { partner: e.target.checked })} className="h-4 w-4 accent-[rgb(var(--good))]" />
-                          Enviar para {f.partner.name} ({num(f.partner.distanceKm, 0)} km)
-                        </label>
-                      ) : (
-                        <span className="text-xs text-muted">Sem parceiro de simbiose na região</span>
-                      )}
-                      <span className={`num text-xs font-semibold ${gain > 0 ? "text-good" : "text-muted"}`}>{gain > 0 ? `−${money(gain)}/ano` : "sem mudança"}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+      <div className="grid gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[13px] text-muted-foreground">Ajuste a redução de perda de cada insumo e ligue as trocas de resíduo sugeridas.</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={applyAll}>Aplicar recomendações</Button>
+            <Button variant="ghost" size="sm" onClick={() => setState({})} disabled={!changed}><RotateCcw />Zerar</Button>
           </div>
-        </section>
-
-        <section className="card grid content-start gap-4">
-          <h2 className="text-lg font-bold">Antes e depois, por mês</h2>
-          <dl className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-4 gap-y-2 text-sm">
-            <span /><span className="label text-right">Hoje</span><span className="label text-right">Cenário</span>
-            {[
-              ["Prejuízo com resíduo", money(before.loss), money(after.loss)],
-              ["Taxa de desperdício", pct(before.wasteRate, 1), pct(after.wasteRate, 1)],
-              ["Resíduo gerado", num(before.wasteQty), num(after.wasteQty)],
-              ["Para descarte", num(before.landfillQty), num(after.landfillQty)],
-              ["CO₂e líquido", tons(before.netCo2), tons(after.netCo2)],
-            ].map(([k, a, b]) => (
-              <div key={k} className="contents">
-                <dt>{k}</dt>
-                <dd className="num text-right">{a}</dd>
-                <dd className={`num text-right font-semibold ${a !== b ? "text-good" : ""}`}>{b}</dd>
+        </div>
+        {flows.map((f) => {
+          const s = get(f.id);
+          const before = flowMetrics(f);
+          const after = flowMetrics(f, scenarios[f.id]);
+          const gain = before.loss - after.loss;
+          return (
+            <Card key={f.id} className={cn("p-4 transition", (s.reduction > 0 || s.partner) && "border-foreground/25")}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-medium">{f.name}</p>
+                  <p className="text-xs text-muted-foreground">perda atual de {pct(f.lossRate, 1)} · {money(before.loss)}/mês</p>
+                </div>
+                <p className={cn("tabular text-[13.5px] font-semibold", gain > 0.5 ? "text-success" : "text-muted-foreground")}>{gain > 0.5 ? `−${money(gain)}/mês` : "sem mudança"}</p>
               </div>
-            ))}
-          </dl>
-          <p className="text-xs text-muted">Resíduo em kg ou litros. As reduções dependem de intervenção técnica: valide o cenário com um engenheiro antes de investir.</p>
-          <Link href="/empresa/engenheiros" className="btn justify-self-start">Ver engenheiros recomendados</Link>
-        </section>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="flex items-center justify-between text-xs text-muted-foreground" htmlFor={`r-${f.id}`}>
+                    <span>Reduzir a perda em</span><span className="tabular font-medium text-foreground">{pct(s.reduction)}</span>
+                  </label>
+                  <input id={`r-${f.id}`} type="range" min={0} max={0.8} step={0.05} value={s.reduction} onChange={(e) => set(f.id, { reduction: Number(e.target.value) })} className="mt-1.5 w-full accent-[hsl(var(--brand))]" />
+                  {f.leverText && <p className="mt-1 text-xs text-muted-foreground">Sugestão: {f.leverText} <span className="whitespace-nowrap">(até {pct(f.leverReduction ?? 0)})</span></p>}
+                </div>
+                <div>
+                  {f.partner ? (
+                    <label className={cn("flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 transition", s.partner && "border-brand bg-brand-soft")}>
+                      <input type="checkbox" checked={s.partner} onChange={(e) => set(f.id, { partner: e.target.checked })} className="mt-0.5 size-4 accent-[hsl(var(--brand))]" />
+                      <span className="text-xs">
+                        <span className="block font-medium text-foreground">Enviar para {f.partner.name}</span>
+                        <span className="text-muted-foreground">{num(f.partner.distanceKm, 1)} km · líquido de {money2(f.partner.netUnitValue)}/{f.unit} com frete</span>
+                      </span>
+                    </label>
+                  ) : (
+                    <p className="rounded-lg border border-dashed p-2.5 text-xs text-muted-foreground">Nenhum parceiro da rede aceita esse resíduo ainda.</p>
+                  )}
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
+
+      <Card className="lg:sticky lg:top-20">
+        <CardHeader title="Resultado do cenário" description="Comparado com o diagnóstico atual" />
+        <div className="grid gap-4 px-5 pb-5">
+          <div className="rounded-lg bg-subtle p-4">
+            <p className="text-xs text-muted-foreground">Economia</p>
+            <p className="tabular text-[28px] font-semibold leading-tight text-success">{money(saving)}<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+            <p className="tabular text-[13px] text-muted-foreground">{money(saving * 12)} por ano</p>
+          </div>
+          {[
+            ["Prejuízo mensal", money(base.loss), money(sim.loss)],
+            ["Taxa de desperdício", pct(base.wasteRate, 1), pct(sim.wasteRate, 1)],
+            ["Resíduo gerado", tons(base.wasteQty), tons(sim.wasteQty)],
+            ["Circularidade", pct(base.circularity), pct(sim.circularity)],
+          ].map(([l, a, b]) => (
+            <div key={l} className="flex items-center justify-between gap-2 text-[13px]">
+              <span className="text-muted-foreground">{l}</span>
+              <span className="tabular"><span className="text-muted-foreground line-through decoration-muted-foreground/40">{a}</span> <span className="font-medium">{b}</span></span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between border-t pt-4 text-[13px]">
+            <span className="text-muted-foreground">CO₂e evitado</span>
+            <Badge tone="success">{tons(Math.max(0, co2))}/mês</Badge>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

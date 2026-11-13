@@ -1,23 +1,22 @@
+import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { currentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { category } from "@/lib/catalog";
-import { money, relativeDate } from "@/lib/format";
-import { parseSkills } from "@/lib/matching";
+import { notFound } from "next/navigation";
 import { assignRequest } from "@/app/actions";
-import { RoleShell } from "@/components/shells";
-import { SubmitButton } from "@/components/client";
-import { CompleteForm, UpdateForm } from "@/components/request-forms";
-import { Avatar, PageHeader, RequestStatus, Section, initials } from "@/components/ui";
-
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Demanda" };
+import { requireUser } from "@/lib/auth";
+import { category } from "@/lib/catalog";
+import { db } from "@/lib/db";
+import { money, relativeDate } from "@/lib/format";
+import { RequestStatusBadge } from "@/components/domain";
+import { ActionButton } from "@/components/forms";
+import { CompleteButton, MessageForm } from "@/components/request-forms";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Avatar } from "@/components/ui/misc";
+import { cn } from "@/components/ui/cn";
 
 export default async function RequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await currentUser();
-  if (!user) redirect("/entrar");
+  const user = await requireUser();
   const r = await db.supportRequest.findUnique({
     where: { id },
     include: {
@@ -28,88 +27,105 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
     },
   });
   if (!r) notFound();
-
   const isCompany = user.companyId === r.companyId;
   const isAssignee = !!user.engineer && user.engineer.id === r.assigneeId;
   const canAssign = !!user.engineer && r.status === "OPEN";
-  const canWrite = isCompany || isAssignee;
-  const mySkills = user.engineer ? parseSkills(user.engineer.skills).map((s) => s.toLowerCase()) : [];
-  const needed = category(r.category).skills;
+  const canWrite = (isCompany || isAssignee) && r.status !== "DONE";
+  const back = isCompany ? "/app/demandas" : isAssignee ? "/eng/minhas" : user.role === "COMPANY" ? "/app" : "/eng";
+  const steps = [
+    { label: "Publicada", done: true },
+    { label: "Em andamento", done: r.status !== "OPEN" },
+    { label: "Concluída", done: r.status === "DONE" },
+  ];
 
   return (
-    <RoleShell user={user}>
-      <div className="grid gap-6">
-        <Link href={isCompany ? "/empresa/demandas" : user.engineer ? "/engenheiro" : "/"} className="text-sm font-semibold text-muted hover:text-ink">← Voltar</Link>
-        <PageHeader eyebrow={`${category(r.category).label} · ${r.company.name}`} title={r.title} actions={<RequestStatus status={r.status} />}>
-          {r.company.sector} · {r.company.city} · publicada {relativeDate(r.createdAt)}
-        </PageHeader>
-
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          <div className="grid content-start gap-4">
-            <Section title="Briefing">
-              <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-ink">{r.briefing}</pre>
-            </Section>
-
-            {r.status === "DONE" && r.outcome && (
-              <Section title="Resultado" className="border-good">
-                <p className="text-sm">{r.outcome}</p>
-                {r.savedPerMonth != null && <p className="num mt-2 text-good">{money(r.savedPerMonth)}/mês · {money(r.savedPerMonth * 12)}/ano</p>}
-              </Section>
-            )}
-
-            <Section title="Linha do tempo">
-              <ol className="grid gap-4">
-                {r.updates.map((u) =>
-                  u.kind === "EVENT" ? (
-                    <li key={u.id} className="flex items-center gap-3 text-xs text-muted">
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-line" />
-                      <span>{u.body}</span>
-                      <span className="ml-auto shrink-0">{relativeDate(u.createdAt)}</span>
-                    </li>
-                  ) : (
-                    <li key={u.id} className="flex gap-3">
-                      <Avatar text={initials(u.author?.name ?? "?")} tone={u.author?.role === "COMPANY" ? "accent" : "ink"} />
-                      <div className="min-w-0 flex-1 rounded-lg bg-sunken p-3">
-                        <p className="mb-1 text-xs text-muted"><b className="text-ink">{u.author?.name ?? "Alguém"}</b> · {relativeDate(u.createdAt)}</p>
-                        <p className="whitespace-pre-wrap text-sm">{u.body}</p>
-                      </div>
-                    </li>
-                  ),
-                )}
-              </ol>
-              {canWrite && r.status !== "DONE" && <div className="mt-5 border-t border-line pt-4"><UpdateForm requestId={r.id} /></div>}
-            </Section>
-          </div>
-
-          <div className="grid content-start gap-4">
-            <section className="card grid gap-3">
-              <p className="label">Resumo</p>
-              <dl className="grid grid-cols-2 gap-3 text-sm">
-                <div><dt className="text-xs text-muted">Prejuízo da empresa</dt><dd className="num">{money(r.monthlyLoss * 12)}/ano</dd></div>
-                <div><dt className="text-xs text-muted">Esforço estimado</dt><dd className="num">{r.estimatedHours} h</dd></div>
-                <div className="col-span-2"><dt className="text-xs text-muted">Responsável</dt><dd>{r.assignee ? `${r.assignee.user.name} · ${r.assignee.course}` : r.invited ? `Convite para ${r.invited.user.name}` : "Aberta para a rede"}</dd></div>
-              </dl>
-              <div className="flex flex-wrap gap-1">
-                {needed.map((s) => <span key={s} className={`tag ${mySkills.includes(s.toLowerCase()) ? "tag-hit" : ""}`}>{s}</span>)}
-              </div>
-            </section>
-
-            {canAssign && (
-              <form action={assignRequest} className="card grid gap-3 border-accent">
-                <input type="hidden" name="id" value={r.id} />
-                <p className="text-sm">Ao assumir, você vira responsável pela demanda e a empresa é avisada. As horas contam como extensão.</p>
-                <SubmitButton pendingText="Assumindo…">Assumir demanda</SubmitButton>
-              </form>
-            )}
-
-            {isAssignee && r.status === "IN_PROGRESS" && (
-              <Section title="Concluir demanda">
-                <CompleteForm requestId={r.id} />
-              </Section>
-            )}
-          </div>
+    <div className="mx-auto max-w-5xl">
+      <Link href={back} className="mb-4 inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Voltar</Link>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-center gap-2"><RequestStatusBadge status={r.status} /><Badge tone="outline">{category(r.category).label}</Badge></div>
+          <h1 className="text-[22px] font-semibold leading-tight">{r.title}</h1>
+          <p className="mt-1 text-[13.5px] text-muted-foreground">{r.company.name} · {r.company.city} · publicada {relativeDate(r.createdAt)}</p>
         </div>
       </div>
-    </RoleShell>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <div className="grid gap-4">
+          <Card>
+            <CardHeader title="Briefing" description="Gerado a partir do diagnóstico da empresa" />
+            <div className="whitespace-pre-wrap px-5 pb-5 text-[13.5px] leading-relaxed text-foreground/90">{r.briefing}</div>
+          </Card>
+
+          {r.status === "DONE" && r.outcome && (
+            <Card className="border-success/40 bg-success-soft/40">
+              <CardHeader title="Resultado" description={r.savedPerMonth ? `Economia validada de ${money(r.savedPerMonth)} por mês` : undefined} />
+              <p className="px-5 pb-5 text-[13.5px]">{r.outcome}</p>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader title="Atividade" description={`${r.updates.length} registros`} />
+            <ol className="grid gap-0 px-5 pb-2">
+              {r.updates.map((u, i) => (
+                <li key={u.id} className="relative flex gap-3 pb-5">
+                  {i < r.updates.length - 1 && <span className="absolute left-[13px] top-8 bottom-0 w-px bg-border" />}
+                  {u.kind === "EVENT" || !u.author ? (
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted"><Circle className="size-2.5 fill-muted-foreground text-muted-foreground" /></span>
+                  ) : <Avatar name={u.author.name} size={28} />}
+                  <div className="min-w-0 flex-1 pt-1">
+                    {u.kind === "EVENT" || !u.author ? (
+                      <p className="text-[13px] text-muted-foreground">{u.body} · <span className="text-xs">{relativeDate(u.createdAt)}</span></p>
+                    ) : (
+                      <>
+                        <p className="text-[13px]"><b className="font-medium">{u.author.name}</b> <span className="text-xs text-muted-foreground">{relativeDate(u.createdAt)}</span></p>
+                        <div className={cn("mt-1 whitespace-pre-wrap rounded-lg px-3 py-2 text-[13.5px]", u.authorId === user.id ? "bg-brand-soft" : "bg-subtle")}>{u.body}</div>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {canWrite && <div className="border-t p-4"><MessageForm id={r.id} /></div>}
+            {!canWrite && r.status !== "DONE" && <p className="border-t px-5 py-3 text-xs text-muted-foreground">Só a empresa e quem assumiu a demanda podem escrever aqui.</p>}
+          </Card>
+        </div>
+
+        <div className="grid gap-4 lg:sticky lg:top-20">
+          <Card className="p-5">
+            <ol className="grid gap-3">
+              {steps.map((s) => (
+                <li key={s.label} className="flex items-center gap-2.5 text-[13px]">
+                  {s.done ? <CheckCircle2 className="size-4 text-success" /> : <Circle className="size-4 text-muted-foreground/50" />}
+                  <span className={cn(!s.done && "text-muted-foreground")}>{s.label}</span>
+                </li>
+              ))}
+            </ol>
+            <dl className="mt-5 grid grid-cols-2 gap-y-2 border-t pt-4 text-[13px]">
+              <dt className="text-muted-foreground">Em jogo</dt><dd className="tabular text-right font-medium">{money(r.monthlyLoss)}/mês</dd>
+              <dt className="text-muted-foreground">Esforço</dt><dd className="tabular text-right">{r.estimatedHours} h</dd>
+              <dt className="text-muted-foreground">Empresa</dt><dd className="truncate text-right">{r.company.size}, {r.company.employees} pessoas</dd>
+            </dl>
+            {canAssign && (
+              <ActionButton className="mt-5 w-full" variant="brand" action={assignRequest} fields={{ id: r.id }}>Assumir demanda</ActionButton>
+            )}
+            {isAssignee && r.status === "IN_PROGRESS" && <div className="mt-5"><CompleteButton id={r.id} /></div>}
+          </Card>
+          {(r.assignee || r.invited) && (
+            <Card className="p-5">
+              <p className="mb-3 text-xs font-medium text-muted-foreground">{r.assignee ? "Responsável" : "Convidado(a)"}</p>
+              {(() => {
+                const p = (r.assignee ?? r.invited)!;
+                return (
+                  <div className="flex items-center gap-3">
+                    <Avatar name={p.user.name} size={36} />
+                    <div className="min-w-0"><p className="text-[13.5px] font-medium">{p.user.name}</p><p className="truncate text-xs text-muted-foreground">{p.course}</p></div>
+                  </div>
+                );
+              })()}
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

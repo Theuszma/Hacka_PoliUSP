@@ -1,113 +1,84 @@
+import { Clock, Factory, Leaf, PiggyBank, Recycle, Sparkles, Truck, Users } from "lucide-react";
 import Link from "next/link";
-import { currentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { category } from "@/lib/catalog";
-import { networkMatches } from "@/lib/data";
-import { money, num, pct, tons } from "@/lib/format";
-import { totals } from "@/lib/metrics";
-import { RoleShell } from "@/components/shells";
-import { Kpi, PageHeader, Section } from "@/components/ui";
+import { currentUser, homeFor } from "@/lib/auth";
+import { money, num, tons } from "@/lib/format";
+import { networkImpact } from "@/lib/network";
+import { AppShell, PageHeader } from "@/components/shell";
+import { PublicFooter, PublicHeader } from "@/components/public-header";
+import { Stat } from "@/components/domain";
+import { Card, CardHeader } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { Progress } from "@/components/ui/misc";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Impacto da rede" };
 
-const ODS = [
-  { n: 9, color: "#FD6925", title: "Indústria, inovação e infraestrutura", meta: "Meta 9.4", text: "Modernizar a indústria com uso mais eficiente de recursos e tecnologias limpas." },
-  { n: 12, color: "#BF8B2E", title: "Consumo e produção responsáveis", meta: "Metas 12.2 e 12.5", text: "Uso eficiente de recursos e redução da geração de resíduos por reuso e reciclagem." },
-  { n: 13, color: "#3F7E44", title: "Ação contra a mudança do clima", meta: "Meta 13.2", text: "Emissões evitadas ao substituir matéria-prima virgem." },
-  { n: 4, color: "#C5192D", title: "Educação de qualidade", meta: "Meta 4.4", text: "Estudantes de engenharia aplicando conhecimento técnico em problemas reais." },
-];
+async function Content() {
+  const n = await networkImpact();
+  const circularShare = n.networkWasteKg ? 1 - n.landfillKg / n.networkWasteKg : 0;
+  return (
+    <>
+      <PageHeader eyebrow="Atualizado em tempo real" title="Impacto da rede" description="Resultados de todas as indústrias e engenheiros do Elo, calculados a partir das trocas aceitas e das demandas concluídas." />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Resíduo desviado do aterro" value={tons(n.divertedKg)} unit="/mês" icon={<Truck />} hint={`${n.activeExchanges} trocas ativas`} />
+        <Stat label="Valor gerado nas trocas" value={money(n.exchangeValue)} unit="/mês" icon={<PiggyBank />} hint="receita de quem envia + economia de quem recebe" />
+        <Stat label="CO₂e evitado" value={tons(n.co2Avoided)} unit="/mês" icon={<Leaf />} hint="matéria-prima virgem substituída" />
+        <Stat label="Engenharia aplicada" value={num(n.engineeringHours)} unit="h" icon={<Clock />} hint={`${money(n.engineeringSavings)}/mês economizados`} />
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader title="Trocas ativas" description="Resíduo de uma indústria virando insumo de outra" />
+          <div className="divide-y border-t">
+            {n.exchanges.map((e) => (
+              <div key={e.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-3">
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-medium">{e.flow.name}</p>
+                  <p className="text-xs text-muted-foreground">{e.from.name} → {e.to.name}</p>
+                </div>
+                <p className="tabular text-[13px] text-muted-foreground">{num(e.quantity)} {e.flow.unit}/mês</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <div className="grid content-start gap-4">
+          <Card className="p-5">
+            <div className="flex items-center gap-2 text-[13px] font-medium"><Sparkles className="size-4 text-brand" />Potencial ainda não aproveitado</div>
+            <p className="tabular mt-2 text-[26px] font-semibold leading-none">{money(n.untappedValue)}<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+            <p className="mt-2 text-xs text-muted-foreground">em {n.untappedCount} resíduos que já têm comprador na rede, mas ainda não foram negociados.</p>
+          </Card>
+          <Card className="p-5">
+            <div className="flex items-center gap-2 text-[13px] font-medium"><Recycle className="size-4" />Circularidade da rede</div>
+            <p className="tabular mt-2 text-[26px] font-semibold leading-none">{Math.round(circularShare * 100)}%</p>
+            <Progress value={circularShare * 100} className="mt-3" />
+            <p className="mt-2 text-xs text-muted-foreground">{tons(n.landfillKg)}/mês ainda vão para aterro ou incineração.</p>
+          </Card>
+          <Card className="p-5">
+            <div className="flex items-center gap-2 text-[13px] font-medium"><Factory className="size-4" />{n.companies} indústrias · <Users className="size-4" />{n.engineers} engenheiros</div>
+            <ul className="mt-3 grid gap-1.5 text-xs text-muted-foreground">
+              {n.sectors.map(([s, c]) => <li key={s} className="flex justify-between"><span>{s}</span><span className="tabular">{c}</span></li>)}
+            </ul>
+          </Card>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export default async function ImpactPage() {
   const user = await currentUser();
-  const [companies, engineers, exchanges, requests, matches] = await Promise.all([
-    db.company.findMany({ include: { flows: true } }),
-    db.engineer.findMany(),
-    db.exchange.findMany({ where: { status: "ACCEPTED" }, include: { flow: true, demand: true } }),
-    db.supportRequest.findMany(),
-    networkMatches(),
-  ]);
-
-  const diverted = exchanges.reduce((s, e) => s + e.quantity * category(e.flow.category).kgPerUnit, 0) * 12;
-  const exchangeValue = exchanges.reduce((s, e) => s + (e.demand.virginPrice - e.price) * e.quantity + Math.max(0, e.price) * e.quantity, 0) * 12;
-  const exchangeCo2 = exchanges.reduce((s, e) => s + e.quantity * category(e.flow.category).co2Factor * e.demand.substitution, 0) * 12;
-  const done = requests.filter((r) => r.status === "DONE");
-  const engSaved = done.reduce((s, r) => s + (r.savedPerMonth ?? 0), 0) * 12;
-  const hours = requests.filter((r) => r.status !== "OPEN").reduce((s, r) => s + r.estimatedHours, 0);
-  const potential = matches.filter((m) => !exchanges.some((e) => e.flowId === m.flow.id && e.demandId === m.demand.id));
-  const potentialValue = potential.reduce((s, m) => s + m.senderGain + m.receiverSaving, 0) * 12;
-
-  const rows = companies
-    .filter((c) => c.flows.length)
-    .map((c) => ({ c, t: totals(c.flows) }))
-    .sort((a, b) => b.t.loss - a.t.loss);
-  const network = totals(companies.flatMap((c) => c.flows));
-
-  const body = (
-    <div className="grid gap-6">
-      <PageHeader eyebrow="Rede Elo · piloto ABC Paulista" title="Impacto da rede">
-        Números calculados a partir dos dados cadastrados na plataforma, ligados às metas da Agenda 2030.
-      </PageHeader>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Na rede" value={companies.length} unit="empresas" hint={`${engineers.filter((e) => e.kind === "STUDENT").length} estudantes e ${engineers.filter((e) => e.kind === "MENTOR").length} mentores`} />
-        <Kpi tone="good" label="Desviado do aterro" value={tons(diverted, 0)} unit="/ano" hint={`em ${exchanges.length} trocas de resíduo ativas`} />
-        <Kpi label="Valor gerado" value={money(exchangeValue + engSaved)} unit="/ano" hint="trocas de resíduo e melhorias concluídas" />
-        <Kpi label="CO₂e evitado" value={tons(exchangeCo2, 0)} unit="/ano" hint={`${hours} h de engenharia aplicadas`} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <Section title="Onde está o desperdício" aside={`${money(network.loss * 12)}/ano na rede · circularidade de ${pct(network.circularity)}`}>
-          <div className="-mx-5 overflow-x-auto px-5">
-            <table className="table min-w-[520px]">
-              <thead><tr><th>Empresa</th><th className="text-right">Prejuízo/ano</th><th className="text-right">Desperdício</th><th className="text-right">Circularidade</th></tr></thead>
-              <tbody>
-                {rows.map(({ c, t }) => (
-                  <tr key={c.id}>
-                    <td><p className="font-medium">{c.name}</p><p className="text-xs text-muted">{c.city}</p></td>
-                    <td className="num text-right">{money(t.loss * 12)}</td>
-                    <td className="num text-right">{pct(t.wasteRate, 1)}</td>
-                    <td className="text-right">
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-1.5 w-16 overflow-hidden rounded-full bg-sunken"><span className="block h-full bg-good" style={{ width: `${t.circularity * 100}%` }} /></span>
-                        <span className="num w-10 text-right">{pct(t.circularity)}</span>
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-        <section className="card grid content-start gap-3">
-          <p className="label">Ainda na mesa</p>
-          <p className="font-display text-3xl font-extrabold text-accent">{money(potentialValue)}<span className="ml-1 font-sans text-sm font-medium text-muted">/ano</span></p>
-          <p className="text-sm text-muted">em {potential.length} trocas de resíduo compatíveis que o matching encontrou e ainda não foram fechadas.</p>
-          <p className="text-sm text-muted">{requests.filter((r) => r.status === "OPEN").length} demandas esperam engenheiro e {num(requests.filter((r) => r.status === "IN_PROGRESS").length)} estão em andamento.</p>
-        </section>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {ODS.map((o) => (
-          <div key={o.n} className="card flex items-start gap-4">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg font-display text-lg font-extrabold text-white" style={{ background: o.color }}>{o.n}</span>
-            <div>
-              <p className="font-semibold">ODS {o.n} · {o.title}</p>
-              <p className="text-xs text-muted">{o.meta}</p>
-              <p className="mt-1 text-sm">{o.text}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="text-xs text-muted">Protótipo com dados fictícios. Fatores de emissão aproximados para fins de demonstração.</p>
-    </div>
-  );
-
-  if (user) return <RoleShell user={user}>{body}</RoleShell>;
+  const ready = user && (user.role === "COMPANY" ? !!user.company?.onboardedAt : !!user.engineer);
+  if (user && ready) return <AppShell user={user}><Content /></AppShell>;
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <Link href="/entrar" className="mb-6 inline-block text-sm font-semibold text-accent">Entrar na plataforma →</Link>
-      {body}
-    </main>
+    <div className="min-h-dvh">
+      <PublicHeader loggedHref={user ? homeFor(user) : null} />
+      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <Content />
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-subtle p-6">
+          <p className="text-[15px] font-medium">Sua fábrica pode fazer parte desses números.</p>
+          <Link href="/cadastro" className={buttonVariants()}>Criar conta grátis</Link>
+        </div>
+      </main>
+      <PublicFooter />
+    </div>
   );
 }

@@ -14,21 +14,51 @@ datasource db {
 model User {
   id        String    @id @default(cuid())
   name      String
-  email     String    @unique
-  role      String // "COMPANY" | "ENGINEER"
+  email        String    @unique
+  passwordHash String?
+  isDemo       Boolean   @default(false)
+  role         String // "COMPANY" | "ENGINEER"
   companyId String?
   company   Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   engineer  Engineer?
-  updates   RequestUpdate[]
+  updates       RequestUpdate[]
+  sessions      Session[]
+  notifications Notification[]
+  createdAt     DateTime  @default(now())
+}
+
+/// Sessão de login (token aleatório guardado em cookie httpOnly).
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+/// Aviso para um usuário: proposta recebida, demanda assumida, nova mensagem…
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String?
+  href      String?
+  readAt    DateTime?
   createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
 }
 
 /// Pequena ou média indústria cadastrada na rede.
 model Company {
   id        String   @id @default(cuid())
-  name      String
-  initials  String
-  sector    String
+  name        String
+  initials    String
+  cnpj        String?
+  sector      String // chave de SECTORS em src/lib/sectors.ts
+  description String?
+  onboardedAt DateTime?
   size      String // "Micro" | "Pequena" | "Média"
   employees Int
   city      String
@@ -65,6 +95,22 @@ model MaterialFlow {
   updatedAt        DateTime @updatedAt
 
   exchanges Exchange[]
+  records   MonthlyRecord[]
+}
+
+/// Fotografia mensal de um fluxo, para histórico e tendência.
+model MonthlyRecord {
+  id         String       @id @default(cuid())
+  flowId     String
+  flow       MaterialFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  month      String // "AAAA-MM"
+  monthlyQty Float
+  unitCost   Float
+  lossRate   Float
+  destination      String
+  destinationValue Float
+
+  @@unique([flowId, month])
 }
 
 /// O que uma empresa aceita receber como insumo (base do matching de simbiose).
