@@ -157,6 +157,10 @@ test("estudante entrega e mentor valida a demanda", async ({ browser }) => {
 
   await page.goto("/eng/perfil");
   await expect(page.getByText("Horas de extensão").first()).toBeVisible();
+  await page.goto("/eng/extensao");
+  await expect(page.getByText("Relatório de atividades de extensão")).toBeVisible();
+  await expect(page.getByText("Reduzir perda de chapa de aço SAE 1020").first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   expect(errors).toEqual([]);
   expect(mentorErrors).toEqual([]);
 });

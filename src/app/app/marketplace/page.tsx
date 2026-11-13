@@ -1,3 +1,4 @@
+import { LOGISTICS } from "@/lib/catalog";
 import { ArrowDownLeft, ArrowUpRight, Check, Handshake, PackageSearch, X } from "lucide-react";
 import { requireCompanyUser } from "@/lib/auth";
 import { category } from "@/lib/catalog";
@@ -113,7 +114,7 @@ export default async function MarketplacePage() {
 
         <div className="mb-4 grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <Card>
-            <CardHeader title="Sua rede" description={`${companies.length - 1} indústrias num raio de ~40 km`} />
+            <CardHeader title="Sua rede" description={`${companies.length - 1} indústrias num raio de ~${LOGISTICS.maxRadiusKm} km`} />
             <div className="px-3 pb-3"><NetworkMap center={{ lat: user.company.lat, lng: user.company.lng, label: user.company.initials }} nodes={nodes} /></div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 border-t px-5 py-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />troca ativa</span>

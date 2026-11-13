@@ -1,3 +1,4 @@
+import { REALIZATION_RATE } from "@/lib/engine/premises";
 import { Download } from "lucide-react";
 import { requireCompanyUser } from "@/lib/auth";
 import { category, destination } from "@/lib/catalog";
@@ -118,7 +119,7 @@ export default async function ReportPage() {
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-semibold text-brand">{i + 1}</span>
                   <div>
                     <p className="font-medium">{flow.name} <span className="font-normal text-muted-foreground">· {money(metrics.loss)}/mês hoje</span></p>
-                    {flow.leverText && <p className="text-muted-foreground">Processo: {flow.leverText} (redução típica de {pct(flow.leverReduction ?? 0)}, cerca de {money(metrics.loss * (flow.leverReduction ?? 0) * 0.85)}/mês).</p>}
+                    {flow.leverText && <p className="text-muted-foreground">Processo: {flow.leverText} (redução típica de {pct(flow.leverReduction ?? 0)}, cerca de {money(metrics.loss * (flow.leverReduction ?? 0) * REALIZATION_RATE)}/mês).</p>}
                     {mt && flow.destination !== "simbiose" && <p className="text-muted-foreground">Destino: vender para {mt.demand.company.name} a {money2(mt.demand.pricePaid)}/{flow.unit}, {num(mt.distanceKm, 1)} km, ganho de {money(mt.senderGain)}/mês com frete.</p>}
                   </div>
                 </li>

@@ -28,7 +28,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
               </blockquote>
               <div className="text-[13px] text-muted-foreground">Dados ao vivo da conta de demonstração · {demo.city}</div>
               <dl className="grid max-w-md grid-cols-3 gap-6 border-t pt-6">
-                {[[money(demo.yearLoss), "de perda nos últimos 12 meses"], [String(demo.partnersNear), "indústrias da rede a até 15 km"], [`${money(demo.potential)}/mês`, "em oportunidades encontradas"]].map(([v, k]) => (
+                {[[money(demo.yearLoss), "de perda nos últimos 12 meses"], [String(demo.partnersNear), `indústrias da rede a até ${demo.nearKm} km`], [`${money(demo.potential)}/mês`, "em oportunidades encontradas"]].map(([v, k]) => (
                   <div key={k}><dt className="tabular text-xl font-semibold tracking-tight text-emerald-300">{v}</dt><dd className="text-xs text-muted-foreground">{k}</dd></div>
                 ))}
               </dl>

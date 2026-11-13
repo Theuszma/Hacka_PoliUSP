@@ -1,4 +1,8 @@
+import { REALIZATION_RATE } from "@/lib/engine/premises";
 import "server-only";
+
+/** Raio para "parceiros próximos" na vitrine da demonstração. */
+const NEAR_KM = 15;
 import { companyFlows, companyHistory, networkMatches } from "./data";
 import { db } from "./db";
 import { distanceKm } from "./geo";
@@ -33,7 +37,7 @@ export async function showcase() {
     .map(({ flow, metrics }) => {
       const m = best[flow.id];
       const exchange = m && flow.destination !== "simbiose" ? Math.max(0, m.senderGain) : 0;
-      const lever = flow.leverReduction ? metrics.loss * flow.leverReduction * 0.85 : 0;
+      const lever = flow.leverReduction ? metrics.loss * flow.leverReduction * REALIZATION_RATE : 0;
       return exchange >= lever && m
         ? { kind: "exchange" as const, label: `${flow.name} → ${m.demand.company.name}`, value: exchange }
         : { kind: "process" as const, label: flow.name, value: lever };
@@ -55,7 +59,8 @@ export async function showcase() {
     series: series.map((h) => ({ label: monthLabel(h.month), loss: h.loss })),
     opportunities,
     yearLoss: series.reduce((s, h) => s + h.loss, 0),
-    partnersNear: companies.filter((c) => distanceKm(company, c) <= 15).length,
+    partnersNear: companies.filter((c) => distanceKm(company, c) <= NEAR_KM).length,
+    nearKm: NEAR_KM,
     engineeringHours: hours._sum.estimatedHours ?? 0,
     topFlow: rankByLoss(flows).map(({ flow, metrics }) => ({ name: flow.name, lossRate: flow.lossRate, loss: metrics.loss }))[0],
     potential: opportunities.reduce((s, o) => s + o.value, 0),

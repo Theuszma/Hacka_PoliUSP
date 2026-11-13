@@ -1,3 +1,4 @@
+import { REALIZATION_RATE } from "@/lib/engine/premises";
 import { ArrowRight, Factory, Leaf, Recycle, TrendingDown, Sparkles, Handshake, Users, Activity, AlertTriangle, TrendingUp, Gauge } from "lucide-react";
 import Link from "next/link";
 import { requireCompanyUser } from "@/lib/auth";
@@ -78,7 +79,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // Oportunidades: alavanca técnica e troca de resíduo para os 3 maiores prejuízos
   const opportunities = ranked.slice(0, 4).map(({ flow, metrics }) => {
     const match = best[flow.id];
-    const lever = flow.leverReduction ? metrics.loss * flow.leverReduction * 0.85 : 0;
+    const lever = flow.leverReduction ? metrics.loss * flow.leverReduction * REALIZATION_RATE : 0;
     const exchange = match ? Math.max(0, match.senderGain) : 0;
     const bench = benchmarkFor(company.sector, flow.category);
     return { flow, metrics, match, lever, exchange, bench };

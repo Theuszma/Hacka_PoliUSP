@@ -9,6 +9,8 @@ import { PageHeader } from "@/components/shell";
 import { Stat } from "@/components/domain";
 import { EngineerProfileForm } from "@/components/onboarding-engineer";
 import { Card, CardHeader } from "@/components/ui/card";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Perfil e horas" };
 
@@ -34,7 +36,7 @@ export default async function ProfilePage() {
           <EngineerProfileForm initial={{ kind: e.kind, course: e.course, bio: e.bio, skills: parseSkills(e.skills), hoursPerWeek: e.hoursPerWeek, city }} />
         </div>
         <Card>
-          <CardHeader title="Histórico de extensão" description="Para o relatório de atividades de extensão" />
+          <CardHeader title="Histórico de extensão" description="Só entram demandas validadas por mentor(a)" action={<Link href="/eng/extensao" className={buttonVariants({ variant: "outline", size: "sm" })}>Relatório</Link>} />
           {done.length === 0 ? <p className="px-5 pb-5 text-[13px] text-muted-foreground">As demandas concluídas aparecem aqui.</p> : (
             <div className="divide-y border-t">
               {done.map((r) => (

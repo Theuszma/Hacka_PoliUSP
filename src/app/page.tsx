@@ -1,3 +1,4 @@
+import { LOGISTICS } from "@/lib/catalog";
 import {
   ArrowRight, BarChart3, Boxes, Check, Clock, FileSpreadsheet, FlaskConical, GraduationCap, Handshake, Leaf, MapPin, Recycle, ShieldCheck, Sparkles, TrendingDown,
 } from "lucide-react";
@@ -42,7 +43,7 @@ function ProductPreview({ data }: { data: Showcase }) {
     ["Prejuízo com resíduos", money(t.loss), signed(data.delta.loss, (x) => pct(x, 1)), "rose", data.delta.loss !== null && data.delta.loss < 0],
     ["Taxa de desperdício", pct(t.wasteRate, 1), signed(data.delta.wasteRate, (x) => `${num(x * 100, 1)} p.p.`), "amber", data.delta.wasteRate !== null && data.delta.wasteRate < 0],
     ["CO₂e no material perdido", tons(t.embodiedCo2), signed(data.delta.co2, (x) => pct(x, 1)), "sky", data.delta.co2 !== null && data.delta.co2 < 0],
-    ["Circularidade", pct(t.circularity), signed(data.delta.circularity, (x) => `${num(x * 100, 1)} p.p.`), "emerald", data.delta.circularity !== null && data.delta.circularity > 0],
+    ["Desvio de aterro", pct(t.circularity), signed(data.delta.circularity, (x) => `${num(x * 100, 1)} p.p.`), "emerald", data.delta.circularity !== null && data.delta.circularity > 0],
   ] as const;
   return (
     <div className="relative mx-auto mt-16 max-w-5xl text-left">
@@ -79,10 +80,10 @@ function ProductPreview({ data }: { data: Showcase }) {
                 </div>
                 <div className="mt-1 flex justify-between text-[10px] text-muted-foreground"><span>{data.series[0]?.label}</span><span>{data.series[data.series.length - 1]?.label}</span></div>
               </div>
-              <div className="grid content-start gap-2 rounded-lg border p-3">
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-2 rounded-lg border p-3">
                 <p className="text-[12px] font-medium">Oportunidades</p>
                 {data.opportunities.map((o) => (
-                  <div key={o.label} className="flex items-center justify-between gap-2 rounded-md bg-subtle px-2 py-1.5">
+                  <div key={o.label} className="flex min-w-0 items-center justify-between gap-2 rounded-md bg-subtle px-2 py-1.5">
                     <div className="min-w-0"><p className={cn("text-[10px] font-medium", o.kind === "process" ? "text-sky-600 dark:text-sky-400" : "text-emerald-600 dark:text-emerald-400")}>{o.kind === "process" ? "Melhoria de processo" : "Troca de resíduo"}</p><p className="truncate text-[11.5px] font-medium">{o.label}</p></div>
                     <span className="tabular shrink-0 text-[11.5px] font-semibold text-success">+{money(o.value)}</span>
                   </div>
@@ -193,7 +194,7 @@ export default async function Landing() {
               [TrendingDown, "rose", "Diagnóstico", "Onde está o prejuízo, por material."],
               [FlaskConical, "violet", "Simulador", "Quanto cada melhoria vale por ano."],
               [Recycle, "emerald", "Marketplace", "Resíduo de um, insumo do outro."],
-              [MapPin, "sky", "Rede local", "Parceiros num raio de 40 km."],
+              [MapPin, "sky", "Rede local", `Parceiros num raio de ${LOGISTICS.maxRadiusKm} km.`],
               [Boxes, "amber", "Importação", "Planilha CSV do ERP em segundos."],
               [ShieldCheck, "teal", "Conformidade", "Resíduo Classe I só para licenciados."],
             ] as const).map(([Icon, tone, t, d]) => (

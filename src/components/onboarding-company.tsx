@@ -31,16 +31,17 @@ function rowsFor(sector: SectorKey): Row[] {
   }));
 }
 
-export function CompanyOnboarding({ defaultName }: { defaultName: string }) {
+export interface InputSuggestion { category: string; description: string; pricePaid: number; virginPrice: number; capacity: number }
+
+export function CompanyOnboarding({ defaultName, suggestions }: { defaultName: string; suggestions: InputSuggestion[] }) {
   const [state, action] = useActionState<ActionState, FormData>(completeCompanyOnboarding, null);
   const [step, setStep] = useState(0);
   const [company, setCompany] = useState({ name: "", cnpj: "", sector: "metalurgia" as SectorKey, size: "Pequena", employees: "", city: "São Bernardo do Campo", description: "" });
   const [rows, setRows] = useState<Row[]>(() => rowsFor("metalurgia"));
-  const [inputs, setInputs] = useState<InputRow[]>([
-    { category: "aco", description: "Retalhos de chapa", pricePaid: "3", virginPrice: "7.2", capacity: "1000", enabled: false },
-    { category: "madeira", description: "Pallets usados em bom estado", pricePaid: "1", virginPrice: "2.8", capacity: "500", enabled: false },
-    { category: "papelao", description: "Caixas de papelão reutilizáveis", pricePaid: "0.5", virginPrice: "4.5", capacity: "300", enabled: false },
-  ]);
+  // Sugestões vêm do que outras indústrias da rede já aceitam receber (médias por categoria)
+  const [inputs, setInputs] = useState<InputRow[]>(() => suggestions.map((x) => ({
+    category: x.category as InputRow["category"], description: x.description, pricePaid: String(x.pricePaid), virginPrice: String(x.virginPrice), capacity: String(x.capacity), enabled: false,
+  })));
   const [stepError, setStepError] = useState<string | null>(null);
 
   const validRows = rows.filter((r) => r.name.trim() && Number(r.monthlyQty) > 0 && r.unitCost !== "");

@@ -1,3 +1,4 @@
+import { REALIZATION_RATE } from "@/lib/engine/premises";
 import { Activity, AlertTriangle, ArrowLeft, Factory, Leaf, Lightbulb, Recycle, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -45,7 +46,7 @@ export default async function FlowPage({ params }: { params: Promise<{ id: strin
   const prev = series.length > 1 ? series[series.length - 2] : null;
   const dLoss = prev && prev.loss ? (m.loss - prev.loss) / prev.loss : null;
   const matches = (await networkMatches()).filter((x) => x.flow.id === flow.id && x.senderGain > 0).sort((a, b) => b.senderGain - a.senderGain).slice(0, 4);
-  const leverGain = flow.leverReduction ? m.loss * flow.leverReduction * 0.85 : 0;
+  const leverGain = flow.leverReduction ? m.loss * flow.leverReduction * REALIZATION_RATE : 0;
   const diag = diagnoseFlow({ ...flow, lossHistory: records.map((r) => r.lossRate), benchmark: bench });
   const benchGap = diag.benchmarkSavings;
 
