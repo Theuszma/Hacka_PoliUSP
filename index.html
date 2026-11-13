@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important} body{margin:0} img{max-width:100%}</style>
+<title>Elo Indústria Circular</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: painel de fábrica — barra de navegação fixa, conteúdo em grade de 12 colunas, dados em mono */
+:root {
+  --bg: #F3F4F0;
+  --surface: #FFFFFF;
+  --surface-2: #ECEEE8;
+  --ink: #1A201E;
+  --muted: #5B6661;
+  --line: #D9DED7;
+  --accent: #D9581A;      /* laranja ODS 9 */
+  --accent-ink: #FFFFFF;
+  --accent-soft: #FBE6DA;
+  --ochre: #A97B1F;       /* ocre ODS 12 */
+  --ochre-soft: #F4EBD5;
+  --good: #2D7A4D;
+  --good-soft: #DCEFE3;
+  --bad: #B23A2C;
+  --bad-soft: #F6DEDA;
+  --warn: #A86A12;
+  --shadow: 0 1px 2px rgba(20,30,25,.06), 0 4px 16px rgba(20,30,25,.05);
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111514; --surface: #191E1C; --surface-2: #212725; --ink: #E6EBE8; --muted: #98A39E; --line: #2D3532;
+  --accent: #F0763A; --accent-ink: #1A0E07; --accent-soft: #3A2318; --ochre: #D3A548; --ochre-soft: #352B16;
+  --good: #5BBE85; --good-soft: #17301F; --bad: #EC7564; --bad-soft: #3A1E1A; --warn: #E0A64A;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #111514; --surface: #191E1C; --surface-2: #212725; --ink: #E6EBE8; --muted: #98A39E; --line: #2D3532;
+  --accent: #F0763A; --accent-ink: #1A0E07; --accent-soft: #3A2318; --ochre: #D3A548; --ochre-soft: #352B16;
+  --good: #5BBE85; --good-soft: #17301F; --bad: #EC7564; --bad-soft: #3A1E1A; --warn: #E0A64A;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+.mono, .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Header */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top-row { display: flex; align-items: center; gap: 16px; padding-block: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-size: 1.25rem; }
+.brand svg { flex: none; }
+.brand small { font-family: var(--f-body); font-weight: 500; font-size: .78rem; color: var(--muted); display: block; line-height: 1.1; }
+.company { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.company .who { text-align: right; min-width: 0; }
+.company .who b { display: block; font-size: .9rem; }
+.company .who span { font-size: .78rem; color: var(--muted); }
+.avatar { width: 34px; height: 34px; border-radius: 8px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: .85rem; flex: none; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs a { padding: 10px 14px; text-decoration: none; color: var(--muted); font-weight: 600; font-size: .9rem; border-bottom: 3px solid transparent; white-space: nowrap; }
+nav.tabs a:hover { color: var(--ink); }
+nav.tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
+nav.tabs a .count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-size: .72rem; text-align: center; }
+
+main { padding-block: 24px 64px; }
+section.view { display: grid; gap: 20px; }
+.view-head { display: flex; gap: 16px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
+.view-head p { max-width: 64ch; color: var(--muted); margin-top: 4px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.grid { display: grid; gap: 16px; }
+.g-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.g-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.g-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.g-main { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+@media (max-width: 900px) { .g-4 { grid-template-columns: repeat(2, minmax(0,1fr)); } .g-3, .g-main { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 560px) { .g-2, .g-4 { grid-template-columns: minmax(0,1fr); } .company .who span { display: none; } }
+
+/* KPI */
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 4px; }
+.kpi .val { font-family: var(--f-display); font-weight: 800; font-size: 1.85rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi .sub { font-size: .8rem; color: var(--muted); }
+.kpi.hot { border-color: var(--accent); background: linear-gradient(0deg, var(--surface), var(--surface)) padding-box; box-shadow: inset 4px 0 0 var(--accent); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.r, th.r { text-align: right; }
+tr:last-child td { border-bottom: none; }
+td .sub { display: block; font-size: .76rem; color: var(--muted); }
+
+/* Pills */
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.p-bad { background: var(--bad-soft); color: var(--bad); }
+.p-good { background: var(--good-soft); color: var(--good); }
+.p-warn { background: var(--ochre-soft); color: var(--warn); }
+.p-accent { background: var(--accent-soft); color: var(--accent); }
+.tag { display: inline-block; padding: 1px 7px; border-radius: 4px; background: var(--surface-2); color: var(--muted); font-size: .74rem; margin: 2px 4px 2px 0; }
+.tag.hit { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* Buttons & forms */
+button, .btn { text-decoration: none; font: inherit; font-weight: 600; font-size: .88rem; border-radius: 7px; padding: 8px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.primary:hover { filter: brightness(1.06); }
+button.ghost { background: transparent; }
+button:disabled { opacity: .55; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: .78rem; font-weight: 600; color: var(--muted); }
+input, select, textarea { font: inherit; font-size: .9rem; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); width: 100%; min-width: 0; }
+textarea { min-height: 150px; resize: vertical; font-family: var(--f-mono); font-size: .8rem; line-height: 1.5; }
+.form-grid { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0,1fr)); }
+@media (max-width: 760px) { .form-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* Material flow bars */
+.flows { display: grid; gap: 14px; }
+.flow-line { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0,1fr) 92px; gap: 12px; align-items: center; }
+.flow-line .name { font-weight: 600; font-size: .88rem; }
+.flow-line .name span { display: block; font-weight: 400; font-size: .75rem; color: var(--muted); }
+.bar { display: flex; height: 22px; border-radius: 4px; overflow: hidden; background: var(--surface-2); }
+.bar > i { display: block; height: 100%; }
+.b-prod { background: color-mix(in srgb, var(--ink) 22%, var(--surface)); }
+.b-circ { background: var(--good); }
+.b-land { background: var(--bad); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+@media (max-width: 560px) { .flow-line { grid-template-columns: minmax(0,1fr) 80px; } .flow-line .bar { grid-column: 1 / -1; grid-row: 2; } }
+
+/* Simulator */
+.sim-item { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.sim-item:last-child { border-bottom: none; }
+.sim-item .lever { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+input[type="range"] { padding: 0; accent-color: var(--accent); }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; cursor: pointer; white-space: nowrap; }
+.switch input { width: 16px; height: 16px; accent-color: var(--good); }
+@media (max-width: 760px) { .sim-item { grid-template-columns: minmax(0,1fr); gap: 8px; } }
+.compare { display: grid; grid-template-columns: auto 1fr 1fr; gap: 6px 14px; font-size: .88rem; align-items: baseline; }
+.compare .h { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+.delta-good { color: var(--good); font-weight: 600; }
+
+/* Cards (match/engineers) */
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card.best { border-color: var(--accent); box-shadow: var(--shadow); }
+.card .head { display: flex; gap: 12px; align-items: flex-start; }
+.card .head > div { min-width: 0; }
+.card .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: .82rem; }
+.card .meta b { display: block; font-family: var(--f-mono); font-weight: 500; font-size: .92rem; }
+.card .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.arrow-flow { display: flex; align-items: center; gap: 8px; font-size: .85rem; flex-wrap: wrap; }
+.arrow-flow b { font-weight: 600; }
+.arrow-flow svg { flex: none; color: var(--muted); }
+.ribbon { font-size: .72rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .07em; }
+
+.net-svg { width: 100%; height: auto; display: block; }
+.net-svg text { fill: var(--ink); font-family: var(--f-body); font-size: 11px; }
+.net-svg .km { fill: var(--muted); font-family: var(--f-mono); font-size: 10px; }
+
+.empty { padding: 28px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; }
+
+/* Modal */
+.modal-bg { position: fixed; inset: 0; background: rgba(10,14,12,.5); display: grid; place-items: center; z-index: 20; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.modal { background: var(--surface); border-radius: 12px; max-width: 640px; width: 100%; max-height: 100%; overflow: auto; padding: 22px; display: grid; gap: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: .88rem; z-index: 30; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+.ods { display: inline-flex; align-items: center; justify-content: center; font-family: var(--f-display); font-weight: 800; color: #fff; border-radius: 6px; width: 40px; height: 40px; font-size: 1rem; flex: none; }
+.demo-note { font-size: .78rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+@media (prefers-reduced-motion: no-preference) { .card, .panel, .kpi { transition: border-color .15s, box-shadow .15s; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="8" fill="var(--accent)"/><circle cx="13" cy="17" r="6.5" fill="none" stroke="var(--accent-ink)" stroke-width="3"/><circle cx="21" cy="17" r="6.5" fill="none" stroke="var(--accent-ink)" stroke-width="3"/></svg>
+        <div>Elo<small>Rede de indústria circular</small></div>
+      </div>
+      <div class="company">
+        <div class="who"><b id="co-name"></b><span id="co-meta"></span></div>
+        <div class="avatar" id="co-avatar"></div>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Seções">
+      <a href="#diagnostico" data-v="diagnostico">Diagnóstico</a>
+      <a href="#simulador" data-v="simulador">Simulador</a>
+      <a href="#simbiose" data-v="simbiose">Rede de simbiose</a>
+      <a href="#engenheiros" data-v="engenheiros">Engenheiros</a>
+      <a href="#demandas" data-v="demandas">Painel do engenheiro<span class="count" id="open-count"></span></a>
+      <a href="#impacto" data-v="impacto">Impacto</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="app"></main>
+<div id="modal-root"></div>
+
+<script>
+/* ============================================================
+   DADOS DE EXEMPLO — empresa e rede fictícias para demonstração
+   ============================================================ */
+const COMPANY = {
+  name: "Metalúrgica Ipiranga Ltda.",
+  short: "MI",
+  setor: "Estamparia e pintura de peças metálicas",
+  porte: "Pequena empresa · 38 funcionários",
+  local: "São Bernardo do Campo, SP"
+};
+
+// Destinos de resíduo. circular = a massa volta para a economia
+const DESTINOS = {
+  aterro:   { label: "Aterro (Classe II)", circular: false },
+  classe1:  { label: "Coleta Classe I (perigoso)", circular: false },
+  sucata:   { label: "Venda como sucata", circular: true },
+  reciclagem:{ label: "Reciclagem", circular: true },
+  simbiose: { label: "Simbiose industrial", circular: true },
+  reuso:    { label: "Reuso interno", circular: true }
+};
+
+// Predefinições por tipo de material: fator de emissão incorporado (kg CO2e por unidade) e áreas técnicas
+const PRESETS = {
+  aco:      { label: "Aço / chapa metálica", unidade: "kg", co2: 1.9, tags: ["aço","nesting","conformação","estamparia"] },
+  aluminio: { label: "Alumínio", unidade: "kg", co2: 8.6, tags: ["alumínio","conformação","fundição"] },
+  plastico: { label: "Plástico (PE/PP)", unidade: "kg", co2: 2.0, tags: ["plásticos","injeção","embalagem"] },
+  madeira:  { label: "Madeira / pallets", unidade: "kg", co2: 0.45, tags: ["embalagem","logística"] },
+  papelao:  { label: "Papelão", unidade: "kg", co2: 0.9, tags: ["embalagem","logística"] },
+  textil:   { label: "Têxtil (algodão/poliéster)", unidade: "kg", co2: 5.5, tags: ["têxtil","corte","modelagem"] },
+  quimico:  { label: "Fluido / químico", unidade: "L", co2: 2.7, tags: ["fluidos","química","efluentes"] },
+  tinta:    { label: "Tinta / revestimento", unidade: "kg", co2: 3.5, tags: ["pintura","processos","resíduos"] },
+  organico: { label: "Orgânico / alimentos", unidade: "kg", co2: 1.2, tags: ["alimentos","biogás","compostagem"] }
+};
+
+const SEED_FLOWS = [
+  { id: "aco",    material: "Chapa de aço SAE 1020", tipo: "aco", unidade: "kg", consumo: 18000, custo: 7.20, perda: 0.22, destino: "sucata", destinoValor: 1.10, fornecedor: "Usiminas via distribuidor (Lote CH-2611)", co2: 1.9,
+    alavanca: { texto: "Otimizar o encaixe de peças na chapa (nesting) e revisar o formato da bobina", reducaoTipica: 0.30 }, tags: PRESETS.aco.tags },
+  { id: "oleo",   material: "Óleo solúvel de corte", tipo: "quimico", unidade: "L", consumo: 800, custo: 18.0, perda: 0.35, destino: "classe1", destinoValor: -2.50, fornecedor: "Distribuidora Química ABC (Lote OS-0988)", co2: 2.7,
+    alavanca: { texto: "Filtrar e controlar a concentração do fluido com refratômetro para estender a vida útil", reducaoTipica: 0.50 }, tags: ["fluidos","química","efluentes","óleo"] },
+  { id: "tinta",  material: "Tinta pó epóxi", tipo: "tinta", unidade: "kg", consumo: 500, custo: 38.0, perda: 0.18, destino: "classe1", destinoValor: -1.80, fornecedor: "WEG Tintas (Lote TP-4410)", co2: 3.5,
+    alavanca: { texto: "Instalar recuperação de overspray na cabine (ciclone + filtro cartucho)", reducaoTipica: 0.65 }, tags: PRESETS.tinta.tags },
+  { id: "pallet", material: "Pallets de madeira", tipo: "madeira", unidade: "kg", consumo: 1200, custo: 2.80, perda: 0.60, destino: "aterro", destinoValor: -0.35, fornecedor: "Pallets Riacho Grande", co2: 0.45,
+    alavanca: { texto: "Criar logística reversa de pallets com clientes e fornecedores", reducaoTipica: 0.40 }, tags: PRESETS.madeira.tags },
+  { id: "filme",  material: "Filme stretch (PEBD)", tipo: "plastico", unidade: "kg", consumo: 300, custo: 12.0, perda: 0.90, destino: "aterro", destinoValor: -0.35, fornecedor: "Embalagens Mauá", co2: 2.0,
+    alavanca: { texto: "Trocar filme por cintas reutilizáveis nas rotas internas", reducaoTipica: 0.50 }, tags: ["embalagem","logística","plásticos"] }
+];
+
+// Parceiros da rede que aceitam o resíduo como insumo (oferta em R$ por unidade; negativo = custo)
+const MATCHES = {
+  aco:    { empresa: "Ferragens Rudge Ramos", km: 6,  oferta: 3.40, uso: "Estampa arruelas e calços a partir de retalhos maiores que 100 mm", substitui: 0.9, capacidade: 5000 },
+  oleo:   { empresa: "Lubrirrefino Diadema",  km: 9,  oferta: -0.80, uso: "Rerrefino licenciado pela ANP: o óleo volta como base lubrificante", substitui: 0.7, capacidade: 2000 },
+  pallet: { empresa: "Marcenaria Escola Vila Gerty", km: 4, oferta: 0.00, uso: "Cooperativa transforma pallets em móveis; coleta semanal gratuita", substitui: 0.8, capacidade: 1500 },
+  filme:  { empresa: "Recicla PE Mauá", km: 14, oferta: 0.90, uso: "Recicladora transforma o filme em pellets de PEBD", substitui: 0.75, capacidade: 3000 }
+};
+
+// Ofertas de outras empresas cujo resíduo pode virar insumo seu
+const OFERTAS = [
+  { id: "of1", empresa: "Estamparia Taboão", km: 11, item: "Retalhos de chapa 2,0 mm (≥ 300 mm)", qtd: "2.500 kg/mês", preco: 4.30, ref: 7.20, unidade: "kg", nota: "Servem para as peças pequenas da linha de calços" },
+  { id: "of2", empresa: "Autopeças Santo André", km: 8, item: "Pallets PBR reformados", qtd: "40 un/mês", preco: 18, ref: 55, unidade: "un", nota: "Substituem compra de pallets novos" }
+];
+
+const ENGENHEIROS = [
+  { id: "e1", nome: "Ana Ribeiro", tipo: "Estudante", curso: "Eng. Metalúrgica e de Materiais · Poli, 4º ano", tags: ["aço","nesting","conformação","alumínio"], horas: 8, nota: 4.9, projetos: 3 },
+  { id: "e2", nome: "Carlos Menezes", tipo: "Mentor voluntário", curso: "Eng. Mecânico · 18 anos em estamparia", tags: ["aço","estamparia","ferramentaria","conformação"], horas: 4, nota: 5.0, projetos: 11 },
+  { id: "e3", nome: "Júlia Tanaka", tipo: "Estudante", curso: "Eng. Química · Poli, 5º ano", tags: ["fluidos","química","efluentes","óleo"], horas: 10, nota: 4.8, projetos: 2 },
+  { id: "e4", nome: "Beatriz Lima", tipo: "Estudante", curso: "Eng. Ambiental · Poli, 5º ano", tags: ["resíduos","pintura","PGRS","inventário GEE"], horas: 6, nota: 4.7, projetos: 4 },
+  { id: "e5", nome: "Rafael Souza", tipo: "Estudante", curso: "Eng. de Produção · Poli, 3º ano", tags: ["lean","logística","embalagem","layout"], horas: 12, nota: 4.6, projetos: 1 },
+  { id: "e6", nome: "Marina Okada", tipo: "Mentora voluntária", curso: "Eng. Química · especialista em pintura industrial", tags: ["pintura","processos","tinta"], horas: 3, nota: 4.9, projetos: 7 },
+  { id: "e7", nome: "Lucas Ferreira", tipo: "Estudante", curso: "Eng. Mecatrônica · Poli, 4º ano", tags: ["IoT","sensores","rastreabilidade"], horas: 8, nota: 4.5, projetos: 2 }
+];
+
+const SEED_DEMANDAS = [
+  { id: "d1", empresa: "Confecções Bom Retiro", local: "São Paulo, SP", area: "têxtil", titulo: "Retalho de tecido: 1,2 t/mês indo para aterro", horas: 16, status: "aberta", resp: null, prejuizo: 9800 },
+  { id: "d2", empresa: "Plásticos Diadema", local: "Diadema, SP", area: "plásticos", titulo: "Refugo de injeção em 8% das peças", horas: 20, status: "aberta", resp: null, prejuizo: 14200 },
+  { id: "d3", empresa: "Laticínio Vale Verde", local: "Taubaté, SP", area: "alimentos", titulo: "Soro de leite descartado: avaliar biogás ou ração", horas: 24, status: "em andamento", resp: "Equipe Poli Júnior", prejuizo: 21500 }
+];
+
+/* ============================================================
+   ESTADO (memória + localStorage opcional)
+   ============================================================ */
+const KEY = "elo-demo-v1";
+function freshState() {
+  return {
+    flows: JSON.parse(JSON.stringify(SEED_FLOWS)),
+    sim: {},                 // id -> { r: reduçãoRelativa, s: usarSimbiose }
+    propostas: {},           // id do fluxo -> "enviada" | "aceita"
+    ofertas: {},             // id da oferta -> "interesse"
+    demandas: JSON.parse(JSON.stringify(SEED_DEMANDAS))
+  };
+}
+let S = freshState();
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(freshState(), JSON.parse(raw)); } catch (e) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ============================================================
+   CÁLCULOS
+   ============================================================ */
+const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const brl2 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nf = (n, d = 0) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: d, minimumFractionDigits: d }).format(n);
+const pct = (x, d = 0) => nf(x * 100, d) + "%";
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// Métricas mensais de um fluxo, opcionalmente com cenário simulado
+function flowMetrics(f, scen) {
+  const r = scen ? (scen.r || 0) : 0;
+  const useSim = scen ? !!scen.s && !!MATCHES[f.id] : false;
+  const perda = f.perda * (1 - r);
+  const perdaQtd = f.consumo * perda;
+  const destinoValor = useSim ? MATCHES[f.id].oferta : f.destinoValor;
+  const destino = useSim ? "simbiose" : f.destino;
+  const custoMaterial = perdaQtd * f.custo;                 // dinheiro que virou resíduo
+  const saldoDestino = perdaQtd * destinoValor;             // receita (+) ou custo (−) do destino
+  const prejuizo = custoMaterial - saldoDestino;
+  const co2 = perdaQtd * f.co2;                             // emissões incorporadas no material perdido
+  // simbiose evita matéria-prima virgem no parceiro
+  const co2Evitado = useSim ? perdaQtd * f.co2 * MATCHES[f.id].substitui : (DESTINOS[destino].circular && destino !== "simbiose" ? perdaQtd * f.co2 * 0.5 : 0);
+  return { perda, perdaQtd, custoMaterial, saldoDestino, prejuizo, co2, co2Evitado, destino, circular: DESTINOS[destino].circular, compra: f.consumo * f.custo };
+}
+function totals(useScenario) {
+  let t = { compra: 0, custoMaterial: 0, prejuizo: 0, perdaQtd: 0, circQtd: 0, aterroQtd: 0, co2: 0, co2Evitado: 0 };
+  S.flows.forEach(f => {
+    const m = flowMetrics(f, useScenario ? S.sim[f.id] : null);
+    t.compra += m.compra; t.custoMaterial += m.custoMaterial; t.prejuizo += m.prejuizo;
+    t.perdaQtd += m.perdaQtd; t.co2 += m.co2; t.co2Evitado += m.co2Evitado;
+    if (m.circular) t.circQtd += m.perdaQtd; else t.aterroQtd += m.perdaQtd;
+  });
+  t.taxa = t.compra ? t.custoMaterial / t.compra : 0;
+  t.circ = t.perdaQtd ? t.circQtd / t.perdaQtd : 0;
+  t.co2Liquido = t.co2 - t.co2Evitado;
+  return t;
+}
+function rankedFlows() {
+  return S.flows.map(f => ({ f, m: flowMetrics(f) })).sort((a, b) => b.m.prejuizo - a.m.prejuizo);
+}
+function engineerScores() {
+  const ranked = rankedFlows();
+  const total = ranked.reduce((s, x) => s + Math.max(0, x.m.prejuizo), 0) || 1;
+  return ENGENHEIROS.map(e => {
+    let score = 0; const hits = new Set(); let topFlow = null, topVal = 0;
+    ranked.forEach(({ f, m }) => {
+      const ov = (f.tags || []).filter(t => e.tags.includes(t));
+      if (ov.length) {
+        const v = (Math.max(0, m.prejuizo) / total) * Math.min(ov.length, 2);
+        score += v; ov.forEach(t => hits.add(t));
+        if (v > topVal) { topVal = v; topFlow = f; }
+      }
+    });
+    return { e, score, hits, topFlow };
+  }).sort((a, b) => b.score - a.score);
+}
+
+/* ============================================================
+   VIEWS
+   ============================================================ */
+const VIEWS = ["diagnostico", "simulador", "simbiose", "engenheiros", "demandas", "impacto"];
+const app = document.getElementById("app");
+
+function kpi(label, val, sub, hot) {
+  return `<div class="kpi${hot ? " hot" : ""}"><span class="label">${label}</span><span class="val">${val}</span><span class="sub">${sub}</span></div>`;
+}
+function destinoPill(d) {
+  const cls = d === "simbiose" || d === "reuso" ? "p-good" : DESTINOS[d].circular ? "p-warn" : "p-bad";
+  return `<span class="pill ${cls}">${DESTINOS[d].label}</span>`;
+}
+
+function viewDiagnostico() {
+  const t = totals(false);
+  const ranked = rankedFlows();
+  const top = ranked[0];
+  const rows = ranked.map(({ f, m }) => `
+    <tr>
+      <td><b>${esc(f.material)}</b><span class="sub">${esc(f.fornecedor || "Fornecedor não informado")}</span></td>
+      <td class="r num">${nf(f.consumo)} ${f.unidade}</td>
+      <td class="r num">${brl2.format(f.custo)}</td>
+      <td class="r num">${pct(f.perda)}</td>
+      <td class="r num">${nf(m.perdaQtd)} ${f.unidade}</td>
+      <td>${destinoPill(f.destino)}</td>
+      <td class="r num"><b>${brl.format(m.prejuizo)}</b></td>
+      <td class="r num">${nf(m.co2 / 1000, 2)} t</td>
+    </tr>`).join("");
+
+  const maxCompra = Math.max(...S.flows.map(f => f.consumo * f.custo));
+  const bars = ranked.map(({ f, m }) => {
+    const prod = (1 - f.perda) * 100, w = f.perda * 100;
+    return `<div class="flow-line">
+      <div class="name">${esc(f.material)}<span>${nf(f.consumo)} ${f.unidade}/mês</span></div>
+      <div class="bar" role="img" aria-label="${esc(f.material)}: ${pct(1 - f.perda)} vira produto, ${pct(f.perda)} vira resíduo">
+        <i class="b-prod" style="width:${prod}%"></i><i class="${m.circular ? "b-circ" : "b-land"}" style="width:${w}%"></i>
+      </div>
+      <div class="num small" style="text-align:right">${pct(f.perda)} perda</div>
+    </div>`;
+  }).join("");
+
+  const presetOpts = Object.entries(PRESETS).map(([k, p]) => `<option value="${k}">${p.label}</option>`).join("");
+  const destOpts = Object.entries(DESTINOS).filter(([k]) => k !== "simbiose").map(([k, d]) => `<option value="${k}">${d.label}</option>`).join("");
+
+  return `<section class="view">
+    <div class="view-head">
+      <div><span class="label">${esc(COMPANY.setor)} · ${esc(COMPANY.local)}</span><h2>Diagnóstico de insumos e desperdício</h2>
+      <p>Cada linha é um fluxo de material: quanto entra por mês, quanto vira resíduo e para onde ele vai. Os números são calculados a partir do que a empresa cadastra.</p></div>
+    </div>
+    <div class="grid g-4">
+      ${kpi("Dinheiro que vira resíduo", brl.format(t.prejuizo) + "<span class='small muted'>/mês</span>", `${brl.format(t.prejuizo * 12)} por ano, já descontada a venda de sucata`, true)}
+      ${kpi("Taxa de desperdício", pct(t.taxa, 1), `do valor comprado em insumos (${brl.format(t.compra)}/mês)`)}
+      ${kpi("Emissões no material perdido", nf(t.co2 / 1000, 1) + " t CO₂e", "por mês, emissões incorporadas na produção desses insumos")}
+      ${kpi("Índice de circularidade", pct(t.circ), `da massa de resíduo volta para a economia; ${nf(t.aterroQtd)} kg/L vão para aterro`)}
+    </div>
+    <div class="grid g-main">
+      <div class="panel">
+        <div class="panel-head"><h3>Para onde vai cada insumo</h3>
+          <div class="legend"><span><i class="b-prod"></i>Vira produto</span><span><i class="b-circ"></i>Resíduo reaproveitado</span><span><i class="b-land"></i>Resíduo descartado</span></div></div>
+        <div class="flows">${bars}</div>
+      </div>
+      <div class="panel" style="display:grid;gap:12px;align-content:start">
+        <span class="label">Maior oportunidade</span>
+        <h3>${esc(top.f.material)}</h3>
+        <p class="num" style="font-size:1.5rem;font-weight:500">${brl.format(top.m.prejuizo * 12)}<span class="small muted"> /ano perdidos</span></p>
+        <p class="small">${esc(top.f.alavanca ? top.f.alavanca.texto : "Cadastre mais detalhes do processo para receber sugestões.")}</p>
+        <div class="row"><a class="btn" href="#simulador">Simular melhoria</a><a class="btn" href="#engenheiros" style="background:var(--accent);border-color:var(--accent);color:var(--accent-ink);text-decoration:none">Pedir apoio de engenharia</a></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Rastreabilidade de insumos</h3><span class="small muted">Valores mensais</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Insumo e lote</th><th class="r">Consumo</th><th class="r">Custo unit.</th><th class="r">Perda</th><th class="r">Resíduo</th><th>Destino atual</th><th class="r">Prejuízo</th><th class="r">CO₂e</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>
+    <form class="panel" id="add-flow" autocomplete="off">
+      <div class="panel-head"><h3>Cadastrar novo insumo</h3><span class="small muted">O diagnóstico é recalculado na hora</span></div>
+      <div class="form-grid">
+        <div class="field" style="grid-column:span 2"><label for="af-mat">Material</label><input id="af-mat" required placeholder="Ex.: Bobina de alumínio 1050"></div>
+        <div class="field"><label for="af-tipo">Tipo</label><select id="af-tipo">${presetOpts}</select></div>
+        <div class="field"><label for="af-cons">Consumo por mês</label><input id="af-cons" type="number" min="1" step="any" required placeholder="2000"></div>
+        <div class="field"><label for="af-custo">Custo por unidade (R$)</label><input id="af-custo" type="number" min="0" step="any" required placeholder="24,00"></div>
+        <div class="field"><label for="af-perda">Perda (%)</label><input id="af-perda" type="number" min="0" max="100" step="any" required placeholder="12"></div>
+        <div class="field"><label for="af-dest">Destino do resíduo</label><select id="af-dest">${destOpts}</select></div>
+        <div class="field"><label for="af-dv">Recebe (+) ou paga (−) por unidade</label><input id="af-dv" type="number" step="any" value="0"></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="primary" type="submit">Adicionar ao diagnóstico</button></div>
+    </form>
+  </section>`;
+}
+
+function viewSimulador() {
+  const before = totals(false), after = totals(true);
+  const items = S.flows.map(f => {
+    const sc = S.sim[f.id] || { r: 0, s: false };
+    const m0 = flowMetrics(f), m1 = flowMetrics(f, sc);
+    const match = MATCHES[f.id];
+    const max = 80;
+    return `<div class="sim-item">
+      <div><b>${esc(f.material)}</b><div class="lever">${esc(f.alavanca ? f.alavanca.texto : "Redução por melhoria de processo")}${f.alavanca ? ` · típico: −${pct(f.alavanca.reducaoTipica)}` : ""}</div></div>
+      <div class="field"><label for="r-${f.id}">Reduzir perda em <span class="num">${nf((sc.r || 0) * 100)}%</span> → <span class="num">${pct(m1.perda, 1)}</span></label>
+        <input type="range" id="r-${f.id}" data-sim="${f.id}" min="0" max="${max}" step="5" value="${Math.round((sc.r || 0) * 100)}"></div>
+      <div style="display:grid;gap:4px;justify-items:start">
+        ${match ? `<label class="switch"><input type="checkbox" id="s-${f.id}" data-simb="${f.id}" ${sc.s ? "checked" : ""}> Enviar para ${esc(match.empresa)}</label>` : `<span class="small muted">Sem parceiro na rede ainda</span>`}
+        <span class="small num ${m0.prejuizo - m1.prejuizo > 0 ? "delta-good" : "muted"}">${m0.prejuizo - m1.prejuizo > 0 ? "−" + brl.format((m0.prejuizo - m1.prejuizo) * 12) + "/ano" : "sem mudança"}</span>
+      </div>
+    </div>`;
+  }).join("");
+  const econ = (before.prejuizo - after.prejuizo) * 12;
+  const co2Ev = ((before.co2Liquido - after.co2Liquido) * 12) / 1000;
+  const row = (label, a, b) => `<span>${label}</span><span class="num">${a}</span><span class="num delta-good">${b}</span>`;
+  return `<section class="view">
+    <div class="view-head"><div><span class="label">Cenários "e se"</span><h2>Simulador de economia circular</h2>
+      <p>Mova as alavancas para estimar o efeito de uma melhoria de processo ou de mandar o resíduo para um parceiro da rede.</p></div>
+      <div class="row"><button type="button" id="sim-typical">Aplicar reduções típicas</button><button type="button" class="ghost" id="sim-reset">Zerar cenário</button></div>
+    </div>
+    <div class="grid g-3">
+      ${kpi("Economia estimada", brl.format(econ) + "<span class='small muted'>/ano</span>", "comparado com a operação atual", true)}
+      ${kpi("CO₂e evitado", nf(co2Ev, 1) + " t/ano", "menos material desperdiçado e menos matéria-prima virgem nos parceiros")}
+      ${kpi("Circularidade", pct(before.circ) + " → " + pct(after.circ), "parcela do resíduo que volta para a economia")}
+    </div>
+    <div class="grid g-main">
+      <div class="panel"><div class="panel-head"><h3>Alavancas por insumo</h3></div>${items}</div>
+      <div class="panel" style="display:grid;gap:14px;align-content:start">
+        <h3>Antes e depois (por mês)</h3>
+        <div class="compare">
+          <span class="h"></span><span class="h">Hoje</span><span class="h">Cenário</span>
+          ${row("Prejuízo com resíduo", brl.format(before.prejuizo), brl.format(after.prejuizo))}
+          ${row("Taxa de desperdício", pct(before.taxa, 1), pct(after.taxa, 1))}
+          ${row("Resíduo gerado", nf(before.perdaQtd) + " kg/L", nf(after.perdaQtd) + " kg/L")}
+          ${row("Para aterro", nf(before.aterroQtd) + " kg/L", nf(after.aterroQtd) + " kg/L")}
+          ${row("CO₂e líquido", nf(before.co2Liquido / 1000, 1) + " t", nf(after.co2Liquido / 1000, 1) + " t")}
+        </div>
+        <p class="small muted">Reduções de perda dependem de intervenção técnica. Peça a um engenheiro da rede para validar o cenário antes de investir.</p>
+        <a class="btn" href="#engenheiros" style="justify-self:start;text-decoration:none">Ver engenheiros recomendados</a>
+      </div>
+    </div>
+  </section>`;
+}
+
+function netSvg() {
+  const partners = Object.entries(MATCHES).map(([id, m]) => ({ id, ...m, flow: S.flows.find(f => f.id === id) }))
+    .concat(OFERTAS.map(o => ({ id: o.id, empresa: o.empresa, km: o.km, incoming: true })));
+  const W = 560, H = 300, cx = W / 2, cy = H / 2;
+  const maxKm = Math.max(...partners.map(p => p.km));
+  let out = "";
+  partners.forEach((p, i) => {
+    const ang = (-Math.PI / 2) + i * (2 * Math.PI / partners.length);
+    const rad = 70 + (p.km / maxKm) * 60;
+    const x = cx + Math.cos(ang) * rad * 1.6, y = cy + Math.sin(ang) * rad;
+    const st = p.incoming ? S.ofertas[p.id] : S.propostas[p.id];
+    const color = st ? "var(--good)" : p.incoming ? "var(--ochre)" : "var(--muted)";
+    out += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${color}" stroke-width="${st ? 2.5 : 1.2}" ${st ? "" : 'stroke-dasharray="4 4"'}/>`;
+    out += `<text class="km" x="${(cx + x) / 2 + 4}" y="${(cy + y) / 2 - 4}">${p.km} km</text>`;
+    out += `<circle cx="${x}" cy="${y}" r="7" fill="${color}"/>`;
+    const anchor = x < cx - 10 ? "end" : x > cx + 10 ? "start" : "middle";
+    const dx = anchor === "end" ? -11 : anchor === "start" ? 11 : 0, dy = anchor === "middle" ? (y < cy ? -12 : 20) : 4;
+    out += `<text x="${x + dx}" y="${y + dy}" text-anchor="${anchor}">${esc(p.empresa)}</text>`;
+  });
+  out += `<circle cx="${cx}" cy="${cy}" r="18" fill="var(--accent)"/><text x="${cx}" y="${cy + 4}" text-anchor="middle" style="fill:var(--accent-ink);font-weight:700">${COMPANY.short}</text>`;
+  return `<svg class="net-svg" viewBox="-40 -10 ${W + 80} ${H + 30}" role="img" aria-label="Mapa esquemático da rede de simbiose ao redor da empresa">${out}</svg>`;
+}
+
+function viewSimbiose() {
+  const arrow = `<svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><path d="M0 6h15M11 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
+  const saida = S.flows.filter(f => MATCHES[f.id]).map(f => {
+    const m = MATCHES[f.id], cur = flowMetrics(f);
+    const ganho = (m.oferta - f.destinoValor) * cur.perdaQtd;
+    const vol = Math.min(cur.perdaQtd, m.capacidade);
+    const co2 = vol * f.co2 * m.substitui / 1000;
+    const st = S.propostas[f.id];
+    return `<div class="card">
+      <div class="arrow-flow"><b>${esc(f.material)}</b>${arrow}<b>${esc(m.empresa)}</b></div>
+      <p class="small muted">${esc(m.uso)}</p>
+      <div class="meta">
+        <span>Volume<b>${nf(vol)} ${f.unidade}/mês</b></span>
+        <span>Distância<b>${m.km} km</b></span>
+        <span>Hoje<b>${f.destinoValor >= 0 ? "+" : "−"}${brl2.format(Math.abs(f.destinoValor))}/${f.unidade}</b></span>
+        <span>Com a troca<b>${m.oferta > 0 ? "+" : m.oferta < 0 ? "−" : ""}${brl2.format(Math.abs(m.oferta))}/${f.unidade}</b></span>
+        <span>Ganho<b class="delta-good">${brl.format(ganho * 12)}/ano</b></span>
+        <span>CO₂e evitado<b>${nf(co2 * 12, 1)} t/ano</b></span>
+      </div>
+      <div class="foot">${st ? `<span class="pill p-good">${st === "aceita" ? "Troca ativa" : "Proposta enviada"}</span>` : `<span class="pill p-accent">Compatível</span>`}
+        <button type="button" ${st ? "disabled" : ""} data-propor="${f.id}" class="${st ? "" : "primary"}">${st ? "Aguardando resposta" : "Propor troca"}</button></div>
+    </div>`;
+  }).join("");
+  const entrada = OFERTAS.map(o => {
+    const st = S.ofertas[o.id];
+    return `<div class="card">
+      <div class="arrow-flow"><b>${esc(o.empresa)}</b>${arrow}<b>${esc(COMPANY.name)}</b></div>
+      <p><b>${esc(o.item)}</b></p>
+      <p class="small muted">${esc(o.nota)}</p>
+      <div class="meta">
+        <span>Disponível<b>${esc(o.qtd)}</b></span><span>Distância<b>${o.km} km</b></span>
+        <span>Preço<b>${brl2.format(o.preco)}/${o.unidade}</b></span><span>Novo custaria<b>${brl2.format(o.ref)}/${o.unidade}</b></span>
+      </div>
+      <div class="foot"><span class="pill p-warn">${pct(1 - o.preco / o.ref)} mais barato</span>
+        <button type="button" data-oferta="${o.id}" ${st ? "disabled" : ""}>${st ? "Interesse enviado" : "Tenho interesse"}</button></div>
+    </div>`;
+  }).join("");
+  return `<section class="view">
+    <div class="view-head"><div><span class="label">Simbiose industrial</span><h2>O resíduo de uma indústria é o insumo de outra</h2>
+      <p>O Elo cruza o que cada empresa descarta com o que outras compram, por tipo de material, volume e distância. Quanto mais perto, menor o frete e a emissão do transporte.</p></div></div>
+    <div class="grid g-main">
+      <div class="panel"><div class="panel-head"><h3>Sua rede num raio de 15 km</h3>
+        <div class="legend"><span><i style="background:var(--muted)"></i>Compatível</span><span><i style="background:var(--ochre)"></i>Oferta para você</span><span><i style="background:var(--good)"></i>Em negociação</span></div></div>${netSvg()}</div>
+      <div class="panel" style="display:grid;gap:10px;align-content:start">
+        <span class="label">Como o match é feito</span>
+        <p class="small">1. Classificação do resíduo (material, pureza, forma).</p>
+        <p class="small">2. Busca por empresas que compram esse material como insumo.</p>
+        <p class="small">3. Filtro de volume mínimo e capacidade do comprador.</p>
+        <p class="small">4. Ordenação por ganho líquido menos frete estimado.</p>
+        <p class="small muted">Resíduos perigosos (Classe I) só vão para destinatários com licença ambiental (CETESB/ANP).</p>
+      </div>
+    </div>
+    <div><h3 style="margin-bottom:12px">Seus resíduos que outras empresas querem</h3><div class="cards">${saida}</div></div>
+    <div><h3 style="margin-bottom:12px">Resíduos de outras empresas que viram insumo para você</h3><div class="cards">${entrada}</div></div>
+  </section>`;
+}
+
+function viewEngenheiros() {
+  const scored = engineerScores();
+  const top = rankedFlows()[0];
+  const cards = scored.map((x, i) => {
+    const e = x.e, best = i === 0;
+    const tags = e.tags.map(t => `<span class="tag${x.hits.has(t) ? " hit" : ""}">${esc(t)}</span>`).join("");
+    const pedido = S.demandas.find(d => d.empresa === COMPANY.name && d.convidado === e.id);
+    return `<div class="card${best ? " best" : ""}">
+      ${best ? `<span class="ribbon">Melhor match para sua maior perda</span>` : ""}
+      <div class="head"><div class="avatar" style="background:${e.tipo.startsWith("Mentor") ? "var(--ochre)" : "var(--ink)"}">${e.nome.split(" ").map(s => s[0]).join("")}</div>
+        <div><b>${esc(e.nome)}</b><div class="small muted">${esc(e.curso)}</div></div></div>
+      <div>${tags}</div>
+      <div class="meta"><span>Perfil<b>${esc(e.tipo)}</b></span><span>Disponível<b>${e.horas} h/semana</b></span>
+        <span>Avaliação<b>${nf(e.nota, 1)} / 5</b></span><span>Projetos<b>${e.projetos}</b></span></div>
+      <div class="foot"><span class="small muted">${x.topFlow ? "Pode ajudar com: " + esc(x.topFlow.material) : "Sem relação direta com seus insumos"}</span>
+        <button type="button" data-convidar="${e.id}" class="${best && !pedido ? "primary" : ""}" ${pedido ? "disabled" : ""}>${pedido ? "Convite enviado" : "Convidar"}</button></div>
+    </div>`;
+  }).join("");
+  const minhas = S.demandas.filter(d => d.empresa === COMPANY.name);
+  const minhasHtml = minhas.length ? minhas.map(d => `<tr><td><b>${esc(d.titulo)}</b><span class="sub">${esc(d.area)}</span></td><td>${statusPill(d)}</td><td>${esc(d.resp || "—")}</td></tr>`).join("")
+    : "";
+  return `<section class="view">
+    <div class="view-head"><div><span class="label">Conexão com a engenharia</span><h2>Engenheiros e estudantes da Poli para o seu problema</h2>
+      <p>O match usa as áreas técnicas de cada pessoa e pondera pelo prejuízo de cada insumo. Estudantes atuam com supervisão de mentores e contam as horas como extensão universitária.</p></div>
+      <button type="button" class="primary" id="open-request">Pedir apoio técnico</button></div>
+    <div class="panel" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px"><span class="label">Sua maior perda</span><p><b>${esc(top.f.material)}</b> · ${brl.format(top.m.prejuizo * 12)}/ano · ${pct(top.f.perda)} de perda</p></div>
+      <div class="small muted" style="flex:2;min-width:220px">Áreas procuradas: ${(top.f.tags || []).map(t => `<span class="tag hit">${esc(t)}</span>`).join("")}</div>
+    </div>
+    <div class="cards">${cards}</div>
+    <div class="panel"><div class="panel-head"><h3>Seus pedidos de apoio</h3></div>
+      ${minhas.length ? `<div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Status</th><th>Responsável</th></tr></thead><tbody>${minhasHtml}</tbody></table></div>`
+        : `<div class="empty">Nenhum pedido ainda. Use "Pedir apoio técnico" e o Elo monta o briefing a partir do seu diagnóstico.</div>`}
+    </div>
+  </section>`;
+}
+function statusPill(d) {
+  return d.status === "aberta" ? `<span class="pill p-accent">Aberta</span>` : d.status === "em andamento" ? `<span class="pill p-warn">Em andamento</span>` : `<span class="pill p-good">Concluída</span>`;
+}
+
+function viewDemandas() {
+  const assumidas = S.demandas.filter(d => d.resp === "Você");
+  const horas = assumidas.reduce((s, d) => s + d.horas, 0);
+  const rows = S.demandas.slice().sort((a, b) => (a.status === "aberta" ? 0 : 1) - (b.status === "aberta" ? 0 : 1)).map(d => `
+    <div class="card${d.empresa === COMPANY.name && d.status === "aberta" ? " best" : ""}">
+      ${d.empresa === COMPANY.name && d.status === "aberta" ? `<span class="ribbon">Nova demanda</span>` : ""}
+      <div class="row" style="justify-content:space-between"><span class="label">${esc(d.area)}</span>${statusPill(d)}</div>
+      <b>${esc(d.titulo)}</b>
+      <div class="small muted">${esc(d.empresa)} · ${esc(d.local)}</div>
+      <div class="meta"><span>Prejuízo da empresa<b>${brl.format(d.prejuizo * 12)}/ano</b></span><span>Esforço estimado<b>${d.horas} h de extensão</b></span></div>
+      <div class="foot"><span class="small muted">${d.resp ? "Com: " + esc(d.resp) : "Sem responsável"}</span>
+        ${d.status === "aberta" ? `<button type="button" class="primary" data-assumir="${d.id}">Assumir demanda</button>` : d.resp === "Você" && d.status === "em andamento" ? `<button type="button" data-concluir="${d.id}">Marcar como concluída</button>` : ""}</div>
+    </div>`).join("");
+  return `<section class="view">
+    <div class="view-head"><div><span class="label">Visão do estudante ou engenheiro voluntário</span><h2>Demandas de PMEs perto de você</h2>
+      <p>Cada demanda chega com o diagnóstico da empresa. Ao assumir, o estudante monta a equipe com um mentor e as horas entram como atividade de extensão.</p></div></div>
+    <div class="grid g-3">
+      ${kpi("Demandas abertas", S.demandas.filter(d => d.status === "aberta").length, "esperando um engenheiro", true)}
+      ${kpi("Assumidas por você", assumidas.length, assumidas.length ? assumidas.map(d => esc(d.empresa)).join(", ") : "nenhuma ainda")}
+      ${kpi("Horas de extensão", horas + " h", "previstas nas demandas que você assumiu")}
+    </div>
+    <div class="cards">${rows}</div>
+  </section>`;
+}
+
+function viewImpacto() {
+  const t = totals(false);
+  const ods = [
+    { n: 9, c: "#FD6925", t: "Indústria, inovação e infraestrutura", meta: "9.4", d: "Modernizar a indústria com uso mais eficiente de recursos e tecnologias limpas." },
+    { n: 12, c: "#BF8B2E", t: "Consumo e produção responsáveis", meta: "12.2 · 12.5", d: "Uso eficiente de recursos naturais e redução substancial da geração de resíduos por reciclagem e reuso." },
+    { n: 13, c: "#3F7E44", t: "Ação contra a mudança do clima", meta: "13.2", d: "Emissões evitadas pela substituição de matéria-prima virgem." },
+    { n: 4, c: "#C5192D", t: "Educação de qualidade", meta: "4.4", d: "Estudantes de engenharia aplicando conhecimento técnico em problemas reais." }
+  ];
+  return `<section class="view">
+    <div class="view-head"><div><span class="label">Rede Elo · piloto ABC Paulista</span><h2>Impacto da rede</h2>
+      <p>Indicadores que a plataforma acompanha para cada empresa e para a rede inteira, ligados às metas da Agenda 2030.</p></div></div>
+    <div class="grid g-4">
+      ${kpi("PMEs na rede", "27", "piloto: São Bernardo, Diadema, Santo André, Mauá")}
+      ${kpi("Engenheiros e estudantes", "41", "12 mentores formados e 29 estudantes")}
+      ${kpi("Resíduo desviado do aterro", "184 t", "nos primeiros 6 meses do piloto")}
+      ${kpi("Economia gerada às PMEs", "R$ 612 mil", "por ano, somando trocas e melhorias")}
+    </div>
+    <div class="grid g-2">
+      ${ods.map(o => `<div class="panel" style="display:flex;gap:14px;align-items:flex-start"><span class="ods" style="background:${o.c}">${o.n}</span>
+        <div><b>ODS ${o.n} · ${o.t}</b><div class="small muted">Meta ${o.meta}</div><p class="small" style="margin-top:4px">${o.d}</p></div></div>`).join("")}
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Esta empresa hoje</h3></div>
+      <div class="grid g-3">
+        <div><span class="label">Prejuízo anual com resíduos</span><p class="num" style="font-size:1.3rem">${brl.format(t.prejuizo * 12)}</p></div>
+        <div><span class="label">CO₂e incorporado no desperdício</span><p class="num" style="font-size:1.3rem">${nf(t.co2 * 12 / 1000, 1)} t/ano</p></div>
+        <div><span class="label">Circularidade</span><p class="num" style="font-size:1.3rem">${pct(t.circ)}</p></div>
+      </div>
+    </div>
+    <p class="small muted">Números da rede são ilustrativos para a demonstração do protótipo.</p>
+  </section>`;
+}
+
+/* ============================================================
+   ROTEAMENTO E EVENTOS
+   ============================================================ */
+function current() { const h = location.hash.replace("#", ""); return VIEWS.includes(h) ? h : "diagnostico"; }
+function render() {
+  const v = current();
+  document.getElementById("co-name").textContent = COMPANY.name;
+  document.getElementById("co-meta").textContent = COMPANY.porte + " · " + COMPANY.local;
+  document.getElementById("co-avatar").textContent = COMPANY.short;
+  document.querySelectorAll("#tabs a").forEach(a => { if (a.dataset.v === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  const open = S.demandas.filter(d => d.status === "aberta").length;
+  const oc = document.getElementById("open-count"); oc.textContent = open; oc.hidden = !open;
+  const fn = { diagnostico: viewDiagnostico, simulador: viewSimulador, simbiose: viewSimbiose, engenheiros: viewEngenheiros, demandas: viewDemandas, impacto: viewImpacto }[v];
+  app.innerHTML = fn() + `<div class="demo-note" style="margin-top:24px"><span>Protótipo Hack@Poli 2026 · dados de exemplo de uma empresa fictícia</span><button type="button" class="ghost" id="reset-demo">Reiniciar demonstração</button></div>`;
+}
+function rerenderKeepScroll() { const y = window.scrollY; render(); window.scrollTo(0, y); }
+function toast(msg) {
+  const el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status"); el.textContent = msg;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 2600);
+}
+
+window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); });
+
+app.addEventListener("input", ev => {
+  const id = ev.target.dataset.sim;
+  if (id) {
+    S.sim[id] = Object.assign({ r: 0, s: false }, S.sim[id], { r: Number(ev.target.value) / 100 });
+    save(); rerenderKeepScroll();
+    const el = document.getElementById("r-" + id); if (el) el.focus();
+  }
+});
+app.addEventListener("change", ev => {
+  const id = ev.target.dataset.simb;
+  if (id) { S.sim[id] = Object.assign({ r: 0, s: false }, S.sim[id], { s: ev.target.checked }); save(); rerenderKeepScroll(); }
+});
+app.addEventListener("submit", ev => {
+  if (ev.target.id !== "add-flow") return;
+  ev.preventDefault();
+  const v = id => document.getElementById(id).value;
+  const tipo = v("af-tipo"), p = PRESETS[tipo];
+  const f = {
+    id: "u" + Date.now(), material: v("af-mat").trim(), tipo, unidade: p.unidade,
+    consumo: Number(v("af-cons")), custo: Number(v("af-custo")), perda: Math.min(1, Number(v("af-perda")) / 100),
+    destino: v("af-dest"), destinoValor: Number(v("af-dv")) || 0, fornecedor: "Cadastrado agora", co2: p.co2, tags: p.tags, alavanca: null
+  };
+  if (!f.material || !(f.consumo > 0)) return;
+  S.flows.push(f); save(); rerenderKeepScroll(); toast(`${f.material} entrou no diagnóstico`);
+});
+app.addEventListener("click", ev => {
+  const b = ev.target.closest("button"); if (!b) return;
+  if (b.id === "reset-demo") { S = freshState(); save(); render(); window.scrollTo(0, 0); toast("Demonstração reiniciada"); return; }
+  if (b.id === "sim-typical") { S.flows.forEach(f => { if (f.alavanca) S.sim[f.id] = Object.assign({ s: false }, S.sim[f.id], { r: f.alavanca.reducaoTipica }); if (MATCHES[f.id]) S.sim[f.id].s = true; }); save(); rerenderKeepScroll(); return; }
+  if (b.id === "sim-reset") { S.sim = {}; save(); rerenderKeepScroll(); return; }
+  if (b.dataset.propor) { S.propostas[b.dataset.propor] = "enviada"; save(); rerenderKeepScroll(); toast("Proposta enviada para " + MATCHES[b.dataset.propor].empresa); return; }
+  if (b.dataset.oferta) { S.ofertas[b.dataset.oferta] = "interesse"; save(); rerenderKeepScroll(); toast("Interesse enviado"); return; }
+  if (b.id === "open-request") { openRequest(null); return; }
+  if (b.dataset.convidar) { openRequest(b.dataset.convidar); return; }
+  if (b.dataset.assumir) { const d = S.demandas.find(x => x.id === b.dataset.assumir); d.status = "em andamento"; d.resp = "Você"; save(); rerenderKeepScroll(); toast(`Você assumiu: ${d.empresa}`); return; }
+  if (b.dataset.concluir) { const d = S.demandas.find(x => x.id === b.dataset.concluir); d.status = "concluída"; save(); rerenderKeepScroll(); toast("Demanda concluída"); return; }
+});
+
+/* Pedido de apoio com briefing automático */
+function briefing() {
+  const t = totals(false), r = rankedFlows();
+  const lines = r.slice(0, 3).map(({ f, m }, i) => `${i + 1}. ${f.material}: perda de ${pct(f.perda)} (${nf(m.perdaQtd)} ${f.unidade}/mês), destino atual ${DESTINOS[f.destino].label.toLowerCase()}, prejuízo ${brl.format(m.prejuizo)}/mês.`);
+  return `Empresa: ${COMPANY.name} (${COMPANY.porte}, ${COMPANY.local})
+Setor: ${COMPANY.setor}
+
+Situação atual
+- Prejuízo com resíduos: ${brl.format(t.prejuizo)}/mês (${pct(t.taxa, 1)} do valor comprado em insumos)
+- Circularidade: ${pct(t.circ)} · CO2e no desperdício: ${nf(t.co2 / 1000, 1)} t/mês
+
+Principais perdas
+${lines.join("\n")}
+
+O que precisamos
+Avaliar a causa da perda de ${r[0].f.material} e propor melhorias de processo com estimativa de investimento e retorno.`;
+}
+function openRequest(engId) {
+  const top = rankedFlows()[0].f;
+  const e = engId ? ENGENHEIROS.find(x => x.id === engId) : null;
+  const root = document.getElementById("modal-root");
+  root.innerHTML = `<div class="modal-bg" id="mbg"><form class="modal" id="req-form" role="dialog" aria-modal="true" aria-labelledby="req-title">
+    <div><span class="label">Pedido de apoio técnico</span><h3 id="req-title">${e ? "Convidar " + esc(e.nome) : "Abrir demanda para a rede de engenheiros"}</h3></div>
+    <div class="field"><label for="req-titulo">Título</label><input id="req-titulo" value="${esc("Reduzir perda de " + top.material + " (" + pct(top.perda) + ")")}"></div>
+    <div class="field"><label for="req-brief">Briefing gerado a partir do diagnóstico</label><textarea id="req-brief">${esc(briefing())}</textarea></div>
+    <div class="row" style="justify-content:flex-end"><button type="button" id="req-cancel">Cancelar</button><button type="submit" class="primary">${e ? "Enviar convite" : "Publicar demanda"}</button></div>
+  </form></div>`;
+  document.getElementById("req-titulo").focus();
+  const close = () => { root.innerHTML = ""; };
+  document.getElementById("req-cancel").onclick = close;
+  document.getElementById("mbg").addEventListener("click", ev => { if (ev.target.id === "mbg") close(); });
+  document.getElementById("req-form").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const t = totals(false);
+    S.demandas.unshift({ id: "m" + Date.now(), empresa: COMPANY.name, local: COMPANY.local, area: (top.tags || ["processos"])[0], titulo: document.getElementById("req-titulo").value,
+      briefing: document.getElementById("req-brief").value, horas: 12, status: "aberta", resp: null, prejuizo: t.prejuizo, convidado: e ? e.id : null });
+    save(); close(); rerenderKeepScroll(); toast(e ? `Convite enviado para ${e.nome}` : "Demanda publicada no painel dos engenheiros");
+  });
+  document.addEventListener("keydown", function esc(ev) { if (ev.key === "Escape") { close(); document.removeEventListener("keydown", esc); } });
+}
+
+render();
+</script>
+</body>
+</html>
