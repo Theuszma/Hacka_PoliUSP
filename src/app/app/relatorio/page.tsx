@@ -1,7 +1,8 @@
 import { Download } from "lucide-react";
 import { requireCompanyUser } from "@/lib/auth";
 import { category, destination } from "@/lib/catalog";
-import { companyExchanges, companyFlows, companyHistory, networkMatches } from "@/lib/data";
+import { companyDiagnosis, companyExchanges, companyFlows, companyHistory, networkMatches } from "@/lib/data";
+import { SOURCES } from "@/lib/engine/sources";
 import { db } from "@/lib/db";
 import { money, money2, num, pct, tons } from "@/lib/format";
 import { lastMonths, monthLabel } from "@/lib/history";
@@ -28,9 +29,10 @@ export default async function ReportPage() {
   const user = await requireCompanyUser();
   const c = user.company;
   const months = lastMonths(12);
-  const [flows, history, matches, exchanges, done] = await Promise.all([
+  const [flows, history, matches, exchanges, done, diag] = await Promise.all([
     companyFlows(c.id), companyHistory(c.id, months), networkMatches(), companyExchanges(c.id),
     db.supportRequest.findMany({ where: { companyId: c.id, status: "DONE" }, include: { assignee: { include: { user: true } } } }),
+    companyDiagnosis(c.id, c.sector),
   ]);
   const t = totals(flows);
   const ranked = rankByLoss(flows);
@@ -68,7 +70,7 @@ export default async function ReportPage() {
               ["Prejuízo com resíduos", `${money(t.loss)}/mês`, `${money(t.loss * 12)} por ano`],
               ["Taxa de desperdício", pct(t.wasteRate, 1), `de ${money(t.purchase)} comprados`],
               ["CO₂e no material perdido", `${tons(t.embodiedCo2)}/mês`, `${tons(t.avoidedCo2)} evitados`],
-              ["Circularidade", pct(t.circularity), `${tons(t.wasteQty)} de resíduo/mês`],
+              ["Circularidade (MCI)", diag.mci.mci.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), `${pct(t.circularity)} do resíduo desviado do aterro`],
             ].map(([l, v, h]) => (
               <div key={l} className="rounded-lg border p-3">
                 <p className="text-[11px] text-muted-foreground">{l}</p>
@@ -134,11 +136,14 @@ export default async function ReportPage() {
           </Section>
         )}
 
-        <Section title="Metodologia">
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Prejuízo = resíduo × custo unitário − resíduo × valor do destino. CO₂e = resíduo × fator de emissão do material. Circularidade = massa com destino circular ÷ massa total de resíduo.
-            Fatores de emissão, perdas de referência por setor e parâmetros de frete são aproximações para demonstração e devem ser substituídos por base auditada em uso real.
-          </p>
+        <Section title="Metodologia e fontes">
+          <div className="grid gap-2 text-xs leading-relaxed text-muted-foreground">
+            <p>Prejuízo = resíduo × custo unitário − resíduo × valor do destino. CO₂e incorporado = resíduo em kg × fator de produção primária do material; o saldo soma emissões de aterro ou incineração e desconta o que é evitado ao substituir material virgem (método de substituição, ISO 14044). MCI adaptado ao escopo da fábrica: LFI = (V + W) ÷ 2M e MCI = 1 − 0,9 × LFI. Alertas de mês atípico usam o escore-z modificado (|z| ≥ 3,5) e tendências usam o estimador de Theil-Sen.</p>
+            <p>As perdas de referência por setor são estimativas internas e ainda precisam ser validadas com dados do setor. A metodologia completa está em /metodologia.</p>
+            <ol className="list-decimal space-y-0.5 pl-4">
+              {(["defra2024", "iso14044", "emfMci", "iglewicz", "sen", "chertow", "pnrs"] as const).map((k) => <li key={k}>{SOURCES[k].citation}</li>)}
+            </ol>
+          </div>
         </Section>
       </article>
     </div>

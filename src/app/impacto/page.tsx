@@ -22,7 +22,7 @@ async function Content() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat tone="emerald" label="Resíduo desviado do aterro" value={tons(n.divertedKg)} unit="/mês" icon={<Truck />} hint={`${n.activeExchanges} trocas ativas`} />
         <Stat tone="amber" label="Valor gerado nas trocas" value={money(n.exchangeValue)} unit="/mês" icon={<PiggyBank />} hint="receita de quem envia + economia de quem recebe" />
-        <Stat tone="sky" label="CO₂e evitado" value={tons(n.co2Avoided)} unit="/mês" icon={<Leaf />} hint="matéria-prima virgem substituída" />
+        <Stat method="co2" tone="sky" label="CO₂e evitado" value={tons(n.co2Avoided)} unit="/mês" icon={<Leaf />} hint="matéria-prima virgem substituída" />
         <Stat tone="violet" label="Engenharia aplicada" value={num(n.engineeringHours)} unit="h" icon={<Clock />} hint={`${money(n.engineeringSavings)}/mês economizados`} />
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">

@@ -15,6 +15,7 @@ export function PublicHeader({ loggedHref, dark }: { loggedHref?: string | null;
           <a href="/#industrias" className="transition hover:text-foreground">Indústrias</a>
           <a href="/#engenheiros" className="transition hover:text-foreground">Engenheiros</a>
           <Link href="/impacto" className="transition hover:text-foreground">Impacto</Link>
+          <Link href="/metodologia" className="transition hover:text-foreground">Metodologia</Link>
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
           <ThemeToggle />
@@ -44,6 +45,7 @@ export function PublicFooter() {
           <p className="font-medium text-white">Produto</p>
           <a href="/#como-funciona" className="hover:text-white">Como funciona</a>
           <Link href="/impacto" className="hover:text-white">Impacto da rede</Link>
+          <Link href="/metodologia" className="hover:text-white">Como calculamos</Link>
           <Link href="/cadastro" className="hover:text-white">Criar conta</Link>
         </div>
         <div className="grid content-start gap-2 text-[13px] text-zinc-400">

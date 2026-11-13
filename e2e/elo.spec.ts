@@ -22,9 +22,16 @@ test("landing mostra números da rede e abre a demonstração", async ({ page })
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Transforme resíduo industrial");
   await expect(page.getByText("dados ao vivo da conta de demonstração")).toBeVisible();
+  await page.goto("/metodologia");
+  await expect(page.getByRole("heading", { name: "Como calculamos" })).toBeVisible();
+  await expect(page.getByText(/Greenhouse gas reporting: conversion factors 2024/).first()).toBeVisible();
+  await page.goto("/");
   await page.getByRole("button", { name: "Ver demonstração" }).click();
   await page.waitForURL("**/app");
   await expect(page.getByRole("heading", { name: "Visão geral" })).toBeVisible();
+  await expect(page.getByText("Alertas do motor de cálculo")).toBeVisible();
+  await page.getByRole("button", { name: /Como calculamos: Indicador/ }).click();
+  await expect(page.getByText(/Ellen MacArthur Foundation/).first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 

@@ -17,7 +17,10 @@ describe("flowMetrics", () => {
     expect(m.materialLost).toBeCloseTo(28512);
     expect(m.destinationBalance).toBeCloseTo(4356);
     expect(m.loss).toBeCloseTo(24156);
-    expect(m.embodiedCo2).toBeCloseTo(7524);
+    expect(m.embodiedCo2).toBeCloseTo(3960 * 2.855);
+    // sucata substitui aço primário: (2,855 − 1,727) + aterro evitado, por kg (DEFRA 2024)
+    expect(m.avoidedCo2).toBeCloseTo(3960 * (2.85491851 - 1.72672731 + 0.00888386), 1);
+    expect(m.disposalCo2).toBe(0);
     expect(m.circular).toBe(true);
   });
 
@@ -25,6 +28,7 @@ describe("flowMetrics", () => {
     const m = flowMetrics(film);
     expect(m.loss).toBeCloseTo(270 * 12 + 270 * 0.35);
     expect(m.circular).toBe(false);
+    expect(m.disposalCo2).toBeCloseTo(270 * 0.00888386, 3);
   });
 
   it("aplica redução de perda e destino alternativo", () => {
@@ -32,7 +36,7 @@ describe("flowMetrics", () => {
     expect(m.lossRate).toBeCloseTo(0.11);
     expect(m.wasteQty).toBeCloseTo(1980);
     expect(m.loss).toBeCloseTo(1980 * (7.2 - 3.4));
-    expect(m.avoidedCo2).toBeCloseTo(1980 * 1.9 * 0.9);
+    expect(m.avoidedCo2).toBeCloseTo(1980 * ((2.85491851 - 1.72672731) * 0.9 + 0.00888386), 1);
   });
 
   it("limita valores fora da faixa", () => {

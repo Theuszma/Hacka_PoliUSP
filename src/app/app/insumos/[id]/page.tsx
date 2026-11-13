@@ -1,4 +1,4 @@
-import { ArrowLeft, Factory, Leaf, Lightbulb, Recycle, TrendingDown } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, Factory, Leaf, Lightbulb, Recycle, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireCompanyUser } from "@/lib/auth";
@@ -9,6 +9,8 @@ import { money, money2, num, pct, relativeDate, tons } from "@/lib/format";
 import { lastMonths, monthLabel } from "@/lib/history";
 import { flowMetrics } from "@/lib/metrics";
 import { benchmarkFor } from "@/lib/sectors";
+import { diagnoseFlow } from "@/lib/engine/insights";
+import { HowCalculated } from "@/components/how";
 import { PageHeader } from "@/components/shell";
 import { DestinationBadge, ExchangeStatusBadge, Stat } from "@/components/domain";
 import { LossTrend } from "@/components/charts";
@@ -44,7 +46,8 @@ export default async function FlowPage({ params }: { params: Promise<{ id: strin
   const dLoss = prev && prev.loss ? (m.loss - prev.loss) / prev.loss : null;
   const matches = (await networkMatches()).filter((x) => x.flow.id === flow.id && x.senderGain > 0).sort((a, b) => b.senderGain - a.senderGain).slice(0, 4);
   const leverGain = flow.leverReduction ? m.loss * flow.leverReduction * 0.85 : 0;
-  const benchGap = bench !== null && flow.lossRate > bench ? (flow.lossRate - bench) * flow.monthlyQty * flow.unitCost : 0;
+  const diag = diagnoseFlow({ ...flow, lossHistory: records.map((r) => r.lossRate), benchmark: bench });
+  const benchGap = diag.benchmarkSavings;
 
   return (
     <>
@@ -56,11 +59,29 @@ export default async function FlowPage({ params }: { params: Promise<{ id: strin
         actions={<FlowDialog flow={flow} trigger={<Button size="sm" variant="outline">Editar dados</Button>} />}
       />
 
+      {diag.anomaly && (
+        <div className={cn("mb-4 flex gap-3 rounded-xl border p-4", diag.anomaly.direction === "up" ? "border-danger/30 bg-danger/5" : "border-success/30 bg-success/5")}>
+          <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", diag.anomaly.direction === "up" ? "text-danger" : "text-success")} />
+          <div className="min-w-0 flex-1 text-[13px]">
+            <p className="font-medium">{diag.anomaly.direction === "up" ? "Perda deste mês fora do padrão" : "Perda deste mês bem abaixo do padrão"}</p>
+            <p className="text-muted-foreground">{pct(diag.anomaly.value, 1)} contra a mediana de {pct(diag.anomaly.baseline, 1)} nos meses anteriores (escore-z {diag.anomaly.z.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}). {diag.anomaly.direction === "up" ? "Vale checar vazamento, troca de lote ou parada de máquina." : "Se for resultado de uma melhoria, ótimo: registre o que mudou."}</p>
+          </div>
+          <HowCalculated method="anomaly" />
+        </div>
+      )}
+      {!diag.anomaly && diag.trend && diag.trend.direction !== "flat" && (
+        <div className="mb-4 flex gap-3 rounded-xl border p-4">
+          <Activity className={cn("mt-0.5 size-4 shrink-0", diag.trend.direction === "up" ? "text-warning" : "text-success")} />
+          <p className="min-w-0 flex-1 text-[13px]"><b className="font-medium">{diag.trend.direction === "up" ? "Perda em alta" : "Perda em queda"}</b> <span className="text-muted-foreground">· variação de cerca de {pct(Math.abs(diag.trend.relative))} nos últimos {records.length} meses.</span></p>
+          <HowCalculated method="trend" />
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat tone="rose" label="Prejuízo" value={money(m.loss)} unit="/mês" icon={<TrendingDown />} delta={dLoss !== null && Math.abs(dLoss) > 0.005 ? `${dLoss > 0 ? "+" : "−"}${pct(Math.abs(dLoss), 1)} vs. mês anterior` : null} deltaGood={dLoss !== null && dLoss < 0} hint={`${money(m.purchase)} comprados por mês`} />
+        <Stat method="loss" tone="rose" label="Prejuízo" value={money(m.loss)} unit="/mês" icon={<TrendingDown />} delta={dLoss !== null && Math.abs(dLoss) > 0.005 ? `${dLoss > 0 ? "+" : "−"}${pct(Math.abs(dLoss), 1)} vs. mês anterior` : null} deltaGood={dLoss !== null && dLoss < 0} hint={`${money(m.purchase)} comprados por mês`} />
         <Stat tone="amber" label="Perda" value={pct(flow.lossRate, 1)} icon={<Factory />} hint={bench !== null ? <span className={cn(flow.lossRate > bench * 1.05 ? "text-danger" : "text-success")}>média do setor: {pct(bench)}</span> : "sem referência do setor"} />
         <Stat tone="sky" label="Resíduo gerado" value={num(m.wasteQty)} unit={`${flow.unit}/mês`} icon={<Recycle />} hint={`${num(flow.monthlyQty)} ${flow.unit} comprados a ${money2(flow.unitCost)}`} />
-        <Stat tone="emerald" label="CO₂e no material perdido" value={tons(m.embodiedCo2)} unit="/mês" icon={<Leaf />} hint={`${tons(m.avoidedCo2)} evitados no destino atual`} />
+        <Stat method="co2" tone="emerald" label="CO₂e no material perdido" value={tons(m.embodiedCo2)} unit="/mês" icon={<Leaf />} hint={`${tons(m.avoidedCo2)} evitados no destino atual`} />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">

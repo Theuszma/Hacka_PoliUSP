@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { destination } from "@/lib/catalog";
+import type { MethodKey } from "@/lib/engine/methods";
+import { HowCalculated } from "./how";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { cn } from "./ui/cn";
@@ -14,13 +16,13 @@ const STAT_TONES = {
   violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
 } as const;
 
-export function Stat({ label, value, unit, hint, delta, deltaGood, icon, className, tone = "neutral" }: {
-  label: string; value: ReactNode; unit?: string; hint?: ReactNode; delta?: string | null; deltaGood?: boolean; icon?: ReactNode; className?: string; tone?: keyof typeof STAT_TONES;
+export function Stat({ label, value, unit, hint, delta, deltaGood, icon, className, tone = "neutral", method }: {
+  label: string; value: ReactNode; unit?: string; hint?: ReactNode; delta?: string | null; deltaGood?: boolean; icon?: ReactNode; className?: string; tone?: keyof typeof STAT_TONES; method?: MethodKey;
 }) {
   return (
     <Card className={cn("p-5", className)}>
       <div className="flex items-center justify-between gap-2 text-[13px] font-medium text-muted-foreground">
-        <span>{label}</span>
+        <span className="flex items-center gap-1">{label}{method && <HowCalculated method={method} />}</span>
         {icon && <span className={cn("grid size-8 place-items-center rounded-lg [&_svg]:size-4", STAT_TONES[tone])}>{icon}</span>}
       </div>
       <div className="mt-2 flex items-baseline gap-1.5">

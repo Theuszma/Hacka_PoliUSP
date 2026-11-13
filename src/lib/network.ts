@@ -1,5 +1,6 @@
 import "server-only";
 import { category } from "./catalog";
+import { avoidedPerKg } from "./engine/factors";
 import { networkMatches } from "./data";
 import { db } from "./db";
 import { flowMetrics } from "./metrics";
@@ -22,7 +23,7 @@ export async function networkImpact() {
     const cat = category(e.flow.category);
     divertedKg += e.quantity * cat.kgPerUnit;
     exchangeValue += e.quantity * Math.max(0, e.demand.virginPrice - e.price) + e.quantity * Math.max(0, e.price);
-    co2Avoided += e.quantity * cat.co2Factor * e.demand.substitution;
+    co2Avoided += e.quantity * cat.kgPerUnit * avoidedPerKg(e.flow.category, e.demand.substitution);
   }
   const engineeringHours = done.reduce((s, r) => s + r.estimatedHours, 0);
   const engineeringSavings = done.reduce((s, r) => s + (r.savedPerMonth ?? 0), 0);

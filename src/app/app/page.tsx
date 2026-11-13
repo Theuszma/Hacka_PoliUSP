@@ -1,8 +1,10 @@
-import { ArrowRight, Factory, Leaf, Recycle, TrendingDown, Sparkles, Handshake, Users } from "lucide-react";
+import { ArrowRight, Factory, Leaf, Recycle, TrendingDown, Sparkles, Handshake, Users, Activity, AlertTriangle, TrendingUp, Gauge } from "lucide-react";
 import Link from "next/link";
 import { requireCompanyUser } from "@/lib/auth";
 import { category, destination } from "@/lib/catalog";
-import { companyExchanges, companyFlows, companyHistory, networkMatches } from "@/lib/data";
+import { companyDiagnosis, companyExchanges, companyFlows, companyHistory, networkMatches } from "@/lib/data";
+import type { Insight } from "@/lib/engine/insights";
+import { HowCalculated } from "@/components/how";
 import { db } from "@/lib/db";
 import { money, num, pct, tons } from "@/lib/format";
 import { lastMonths, monthLabel } from "@/lib/history";
@@ -32,12 +34,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const user = await requireCompanyUser();
   const company = user.company;
   const months = lastMonths(12);
-  const [flows, history, matches, exchanges, requests] = await Promise.all([
+  const [flows, history, matches, exchanges, requests, diag] = await Promise.all([
     companyFlows(company.id),
     companyHistory(company.id, months),
     networkMatches(),
     companyExchanges(company.id),
     db.supportRequest.findMany({ where: { companyId: company.id, status: { not: "DONE" } }, include: { assignee: { include: { user: true } } }, orderBy: { updatedAt: "desc" }, take: 3 }),
+    companyDiagnosis(company.id, company.sector),
   ]);
 
   if (flows.length === 0) {
@@ -110,11 +113,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat tone="rose" label="Prejuízo com resíduos" value={money(t.loss)} unit="/mês" icon={<TrendingDown />} delta={dLoss?.text} deltaGood={dLoss?.down} hint={!dLoss && `${money(yearLoss)} nos últimos 12 meses`} />
-        <Stat tone="amber" label="Taxa de desperdício" value={pct(t.wasteRate, 1)} icon={<Factory />} delta={dRate?.text} deltaGood={dRate?.down} hint={!dRate && `de ${money(t.purchase)} comprados`} />
-        <Stat tone="sky" label="CO₂e no material perdido" value={tons(t.embodiedCo2)} unit="/mês" icon={<Leaf />} delta={dCo2?.text} deltaGood={dCo2?.down} hint={!dCo2 && `${tons(t.avoidedCo2)} evitados no destino`} />
-        <Stat tone="emerald" label="Circularidade" value={pct(t.circularity)} icon={<Recycle />} hint={<Progress value={t.circularity * 100} className="mt-1 w-full" />} />
+        <Stat method="loss" tone="rose" label="Prejuízo com resíduos" value={money(t.loss)} unit="/mês" icon={<TrendingDown />} delta={dLoss?.text} deltaGood={dLoss?.down} hint={!dLoss && `${money(yearLoss)} nos últimos 12 meses`} />
+        <Stat method="wasteRate" tone="amber" label="Taxa de desperdício" value={pct(t.wasteRate, 1)} icon={<Factory />} delta={dRate?.text} deltaGood={dRate?.down} hint={!dRate && `de ${money(t.purchase)} comprados`} />
+        <Stat method="co2" tone="sky" label="CO₂e no material perdido" value={tons(t.embodiedCo2)} unit="/mês" icon={<Leaf />} delta={dCo2?.text} deltaGood={dCo2?.down} hint={!dCo2 && `${tons(t.avoidedCo2)} evitados no destino`} />
+        <Stat method="mci" tone="emerald" label="Circularidade (MCI)" value={diag.mci.mci.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} unit="de 1" icon={<Recycle />} hint={`${pct(diag.mci.diverted)} do resíduo desviado do aterro`} />
       </div>
+
+      {diag.insights.length > 0 && <EngineAlerts insights={diag.insights.slice(0, 4)} total={diag.insights.length} />}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -156,7 +161,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader title="Oportunidades" description={potential > 0 ? `Até ${money(potential)}/mês de economia identificada` : "Sem oportunidades novas no momento"} />
+          <CardHeader title="Oportunidades" description={potential > 0 ? `Até ${money(potential)}/mês de economia identificada` : "Sem oportunidades novas no momento"} action={<HowCalculated method="opportunity" />} />
           <div className="grid gap-2 px-5 pb-5">
             {opportunities.length === 0 && <p className="text-[13px] text-muted-foreground">Cadastre mais insumos ou o que você aceita receber para o Elo encontrar oportunidades.</p>}
             {opportunities.map((o) => {
@@ -227,5 +232,38 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <CardBody className="pt-0"><LossByMaterial data={ranked.slice(0, 8).map(({ flow, metrics }) => ({ name: flow.name, loss: Math.max(0, metrics.loss) }))} /></CardBody>
       </Card>
     </>
+  );
+}
+
+const SEVERITY = {
+  alta: { tone: "danger", label: "Atenção", icon: AlertTriangle },
+  media: { tone: "warning", label: "Acompanhar", icon: TrendingUp },
+  info: { tone: "info", label: "Informativo", icon: Activity },
+} as const;
+
+function EngineAlerts({ insights, total }: { insights: Insight[]; total: number }) {
+  return (
+    <Card className="mt-4">
+      <CardHeader
+        title={<span className="flex items-center gap-2"><Gauge className="size-4 text-brand" />Alertas do motor de cálculo</span>}
+        description={`${total} ${total === 1 ? "sinal encontrado" : "sinais encontrados"} no histórico e na comparação com o setor`}
+        action={<Link href="/metodologia#anomaly" className={buttonVariants({ variant: "ghost", size: "sm" })}>Como funciona</Link>}
+      />
+      <div className="grid gap-px border-t bg-border sm:grid-cols-2">
+        {insights.map((i) => {
+          const s = SEVERITY[i.severity];
+          const Icon = s.icon;
+          return (
+            <Link key={i.id} href={`/app/insumos/${i.flowId}`} className="flex gap-3 bg-card p-4 transition hover:bg-subtle">
+              <Icon className={cn("mt-0.5 size-4 shrink-0", i.severity === "alta" ? "text-danger" : i.severity === "media" ? "text-warning" : "text-muted-foreground")} />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2"><p className="text-[13.5px] font-medium">{i.title}</p><Badge tone={s.tone}>{s.label}</Badge></div>
+                <p className="mt-0.5 text-xs text-muted-foreground">{i.detail}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </Card>
   );
 }

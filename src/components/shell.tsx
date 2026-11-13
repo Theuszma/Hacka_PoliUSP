@@ -36,7 +36,7 @@ export async function AppShell({ user, children }: { user: SessionUser; children
           { href: "/app/demandas", label: "Demandas", icon: "requests", badge: active },
         ],
       },
-      { title: "Empresa", items: [{ href: "/app/relatorio", label: "Relatório", icon: "report" }, { href: "/impacto", label: "Impacto da rede", icon: "impact" }, { href: "/app/configuracoes", label: "Configurações", icon: "settings" }] },
+      { title: "Empresa", items: [{ href: "/app/relatorio", label: "Relatório", icon: "report" }, { href: "/impacto", label: "Impacto da rede", icon: "impact" }, { href: "/metodologia", label: "Como calculamos", icon: "method" }, { href: "/app/configuracoes", label: "Configurações", icon: "settings" }] },
     ];
     shellUser = { name: user.name, email: user.email, org: user.company.name, orgSubtitle: `${sector(user.company.sector).label}`, isDemo: user.isDemo };
   } else {
@@ -45,7 +45,7 @@ export async function AppShell({ user, children }: { user: SessionUser; children
     sections = [
       { items: [{ href: "/eng", label: "Demandas abertas", icon: "inbox", exact: true, badge: open }] },
       { title: "Meu trabalho", items: [{ href: "/eng/minhas", label: "Minhas demandas", icon: "mine" }, { href: "/eng/perfil", label: "Perfil e horas", icon: "profile" }] },
-      { title: "Rede", items: [{ href: "/impacto", label: "Impacto da rede", icon: "impact" }] },
+      { title: "Rede", items: [{ href: "/impacto", label: "Impacto da rede", icon: "impact" }, { href: "/metodologia", label: "Como calculamos", icon: "method" }] },
     ];
     shellUser = {
       name: user.name, email: user.email, org: user.name,

@@ -4,6 +4,7 @@
  * 2. Engenharia: engenheiro ↔ problema da empresa (e demanda ↔ engenheiro).
  */
 import { category, LOGISTICS } from "./catalog";
+import { avoidedPerKg } from "./engine/factors";
 import { distanceKm } from "./geo";
 import { flowMetrics, rankByLoss, type FlowInput } from "./metrics";
 
@@ -71,7 +72,7 @@ export function findSymbiosisMatches(flows: FlowWithCompany[], demands: DemandWi
       const freight = tonKm * LOGISTICS.freightPerTonKm;
       const senderGain = (demand.pricePaid - flow.destinationValue) * volume - freight;
       const receiverSaving = (demand.virginPrice - demand.pricePaid) * volume;
-      const co2Avoided = volume * cat.co2Factor * demand.substitution - tonKm * LOGISTICS.co2PerTonKm;
+      const co2Avoided = volume * cat.kgPerUnit * avoidedPerKg(flow.category, demand.substitution) - tonKm * LOGISTICS.co2PerTonKm;
 
       // Só vale a pena se a troca gera valor para o conjunto e reduz emissões.
       if (senderGain + receiverSaving <= 0 || co2Avoided <= 0) continue;

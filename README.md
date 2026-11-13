@@ -116,26 +116,32 @@ O núcleo de regras (`metrics.ts` e `matching.ts`) não depende de banco nem de 
 - **Engineer**: perfil técnico (estudante ou mentor), áreas, disponibilidade.
 - **SupportRequest** e **RequestUpdate**: pedido de apoio técnico e sua linha do tempo.
 
-### Cálculos (por fluxo, por mês)
+### Motor de cálculo
 
-| Indicador | Fórmula |
-|---|---|
-| Resíduo | consumo × perda |
-| Prejuízo | resíduo × custo unitário − resíduo × valor do destino (+ venda, − descarte) |
-| CO₂e no desperdício | resíduo × fator de emissão do material |
-| Circularidade | massa com destino circular ÷ massa total de resíduo |
-| Ganho da troca (quem envia) | (preço pago pelo parceiro − valor do destino atual) × volume − frete |
-| Economia da troca (quem recebe) | (preço do material novo − preço pago) × volume |
-| CO₂e evitado na troca | volume × fator × taxa de substituição − emissões do transporte |
+Fica em `src/lib/engine/` e em `src/lib/metrics.ts`. São funções puras e testadas, recalculadas a cada mudança de insumo, troca ou demanda. Cada número tem um ícone "como calculamos" com a fórmula, as premissas e a fonte. A página `/metodologia` reúne tudo.
 
-Fatores de emissão e parâmetros de frete estão em `src/lib/catalog.ts` e são aproximações para demonstração.
+| Indicador | Fórmula | Fonte |
+|---|---|---|
+| Prejuízo | resíduo × custo unitário − resíduo × valor do destino | — |
+| CO₂e incorporado | resíduo (kg) × fator de produção primária do material | DESNZ/DEFRA 2024, aba *Material use* |
+| Emissões de destinação | resíduo (kg) × fator de aterro ou combustão | DESNZ/DEFRA 2024, aba *Waste disposal* |
+| CO₂e evitado | resíduo (kg) × (fator primário − fator reciclado) × substituição + aterro evitado | ISO 14044 (substituição) + DEFRA 2024 |
+| Frete | 0,09752 kg CO₂e por t·km | DEFRA 2024, HGV diesel, carga média |
+| Circularidade (MCI) | LFI = (V + W) ÷ 2M · MCI = 1 − 0,9 × LFI (adaptado portão a portão) | Ellen MacArthur Foundation (2015/2019) |
+| Desvio de aterro | massa com destino circular ÷ massa de resíduo | PNRS (Lei 12.305/2010), NBR 10004 |
+| Mês fora do padrão | escore-z modificado 0,6745·(x − mediana)/MAD, alerta se ≥ 3,5 | Iglewicz e Hoaglin (1993) |
+| Tendência | inclinação de Theil-Sen | Sen (1968) |
+| Troca de resíduo | (preço pago − valor do destino) × volume − frete | simbiose industrial, Chertow (2000) |
+
+Os fatores foram tirados da planilha oficial *Greenhouse gas reporting: conversion factors 2024* (conjunto condensado v1.1), que está em `docs/fontes/`. Aço usa a linha *Metal: steel cans* e têxtil usa *Clothing*, os equivalentes mais próximos da tabela. Tintas não têm linha na tabela, então o fator é uma estimativa e aparece marcado assim. As perdas de referência por setor (`src/lib/sectors.ts`) também são estimativas e ainda precisam ser validadas com dados do setor.
 
 ### Próximos passos para produção
 
 - Login social e convite de colegas para a mesma empresa.
 - Postgres com PostGIS para busca geográfica.
 - Importar insumos das notas fiscais de compra (XML da NF-e) e destinos do Manifesto de Transporte de Resíduos (MTR/SINIR).
-- Fatores de emissão de base auditada e relatório de horas de extensão para a Pró-Reitoria.
+- Fatores brasileiros quando houver base pública por material (ex.: SICV Brasil) e benchmarks setoriais validados.
+- Relatório de horas de extensão para a Pró-Reitoria e revisão dos trabalhos de estudantes por mentores.
 
 ## Dados
 

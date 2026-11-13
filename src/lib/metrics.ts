@@ -4,6 +4,7 @@
  * (painéis) e no navegador (simulador).
  */
 import { category, destination } from "./catalog";
+import { avoidedPerKg, materialFactor } from "./engine/factors";
 
 export interface FlowInput {
   id: string;
@@ -38,8 +39,10 @@ export interface FlowMetrics {
   loss: number;
   /** kg CO2e por mês incorporados no material desperdiçado */
   embodiedCo2: number;
-  /** kg CO2e por mês evitados pelo destino (reciclagem, simbiose) */
+  /** kg CO2e por mês evitados pelo destino (reciclagem, simbiose, reuso) */
   avoidedCo2: number;
+  /** kg CO2e por mês emitidos na destinação (aterro, incineração) */
+  disposalCo2: number;
   /** R$ por mês comprados desse insumo */
   purchase: number;
   circular: boolean;
@@ -49,17 +52,26 @@ export function flowMetrics(flow: FlowInput, scenario?: FlowScenario): FlowMetri
   const reduction = clamp(scenario?.reduction ?? 0, 0, 1);
   const lossRate = clamp(flow.lossRate, 0, 1) * (1 - reduction);
   const wasteQty = flow.monthlyQty * lossRate;
-  const factor = category(flow.category).co2Factor;
+  const cat = category(flow.category);
+  const wasteKg = wasteQty * cat.kgPerUnit;
 
   const alt = scenario?.alternative ?? null;
   const destValue = alt ? alt.destinationValue : flow.destinationValue;
   const dest = destination(flow.destination);
   const circular = alt ? true : dest.circular;
-  const avoidedShare = alt ? alt.substitution : dest.avoidedShare;
 
   const materialLost = wasteQty * flow.unitCost;
   const destinationBalance = wasteQty * destValue;
-  const embodiedCo2 = wasteQty * factor;
+  const embodiedCo2 = wasteQty * cat.co2Factor;
+
+  // Crédito e emissões de destinação (DEFRA 2024; substituição conforme ISO 14044)
+  const f = materialFactor(flow.category);
+  let avoidedCo2 = 0;
+  let disposalCo2 = 0;
+  if (alt) avoidedCo2 = wasteKg * avoidedPerKg(flow.category, alt.substitution);
+  else if (dest.credit === "substitution") avoidedCo2 = wasteKg * avoidedPerKg(flow.category);
+  else if (dest.credit === "reuse") avoidedCo2 = wasteKg * (f.primary + f.landfill);
+  if (!alt && dest.disposal) disposalCo2 = wasteKg * (dest.disposal === "landfill" ? f.landfill : f.combustion);
 
   return {
     lossRate,
@@ -68,7 +80,8 @@ export function flowMetrics(flow: FlowInput, scenario?: FlowScenario): FlowMetri
     destinationBalance,
     loss: materialLost - destinationBalance,
     embodiedCo2,
-    avoidedCo2: embodiedCo2 * avoidedShare,
+    avoidedCo2,
+    disposalCo2,
     purchase: flow.monthlyQty * flow.unitCost,
     circular,
   };
@@ -83,7 +96,8 @@ export interface Totals {
   landfillQty: number;
   embodiedCo2: number;
   avoidedCo2: number;
-  /** emissões incorporadas no desperdício menos as evitadas */
+  disposalCo2: number;
+  /** emissões incorporadas no desperdício + destinação − evitadas */
   netCo2: number;
   /** valor perdido ÷ valor comprado */
   wasteRate: number;
@@ -92,7 +106,7 @@ export interface Totals {
 }
 
 export function totals(flows: FlowInput[], scenarios: Record<string, FlowScenario> = {}): Totals {
-  const t = { purchase: 0, materialLost: 0, loss: 0, wasteQty: 0, circularQty: 0, landfillQty: 0, embodiedCo2: 0, avoidedCo2: 0 };
+  const t = { purchase: 0, materialLost: 0, loss: 0, wasteQty: 0, circularQty: 0, landfillQty: 0, embodiedCo2: 0, avoidedCo2: 0, disposalCo2: 0 };
   for (const f of flows) {
     const m = flowMetrics(f, scenarios[f.id]);
     t.purchase += m.purchase;
@@ -101,12 +115,13 @@ export function totals(flows: FlowInput[], scenarios: Record<string, FlowScenari
     t.wasteQty += m.wasteQty;
     t.embodiedCo2 += m.embodiedCo2;
     t.avoidedCo2 += m.avoidedCo2;
+    t.disposalCo2 += m.disposalCo2;
     if (m.circular) t.circularQty += m.wasteQty;
     else t.landfillQty += m.wasteQty;
   }
   return {
     ...t,
-    netCo2: t.embodiedCo2 - t.avoidedCo2,
+    netCo2: t.embodiedCo2 + t.disposalCo2 - t.avoidedCo2,
     wasteRate: t.purchase ? t.materialLost / t.purchase : 0,
     circularity: t.wasteQty ? t.circularQty / t.wasteQty : 0,
   };

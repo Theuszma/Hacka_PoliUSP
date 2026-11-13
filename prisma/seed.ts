@@ -281,6 +281,8 @@ async function main() {
     { company: "panificadora", category: "organico", monthsAgo: 1, destination: "simbiose", destinationValue: 0 },
     // Embalagens Ribeirão Pires: tubetes para a Papel Reciclado ABC há 6 meses
     { company: "embalagens", category: "papelao", monthsAgo: 6, destination: "simbiose", destinationValue: 0.65 },
+    // Ipiranga: vazamento na bomba de fluido no último mês (o motor de cálculo deve alertar)
+    { company: "ipiranga", category: "fluido", monthsAgo: 0, lossFactor: 0.35 / 0.27 },
     // Fundição Mauá: troca de óleo hidráulico usado com a Lubrirrefino há 8 meses
     { company: "fundicao", category: "fluido", monthsAgo: 8, destination: "simbiose", destinationValue: -0.8 },
   ];
@@ -484,6 +486,7 @@ async function main() {
   await db.notification.createMany({
     data: [
       { userId: ids.ipiranga.userId, title: "Estamparia Taboão propôs uma troca", body: "Bobina de aço 2,0 mm: 2.500 kg/mês", href: "/app/marketplace", createdAt: new Date(Date.now() - 3 * h) },
+      { userId: ids.ipiranga.userId, title: "Alerta: perda de óleo solúvel fora do padrão", body: "35% neste mês contra 27% nos meses anteriores", href: "/app", createdAt: new Date(Date.now() - 1 * h) },
       { userId: ids.ipiranga.userId, title: "Nova mensagem de Marina Okada", body: "Pedi três orçamentos, entre R$ 18 e 26 mil…", href: "/app/demandas", createdAt: new Date(Date.now() - 22 * h) },
       { userId: ids.ipiranga.userId, title: "Lubrirrefino Diadema recusou sua proposta", body: "Óleo solúvel de corte", href: "/app/marketplace", createdAt: monthsAgoDate(2), readAt: monthsAgoDate(2) },
       { userId: ids.ipiranga.userId, title: "Demanda concluída", body: "Pallets descartados depois de uma viagem", href: "/app/demandas", createdAt: monthsAgoDate(5), readAt: monthsAgoDate(5) },

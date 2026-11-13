@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Bell, BarChart3, Boxes, FileText, ClipboardList, FlaskConical, GraduationCap, Inbox, LayoutDashboard, LogOut, Menu as MenuIcon, Recycle, Settings, UserRound, Users,
+  Bell, BarChart3, Boxes, Calculator, FileText, ClipboardList, FlaskConical, GraduationCap, Inbox, LayoutDashboard, LogOut, Menu as MenuIcon, Recycle, Settings, UserRound, Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,7 +17,7 @@ import { Dialog, DialogTrigger, Menu, MenuContent, MenuItem, MenuLabel, MenuSepa
 
 const ICONS = {
   dashboard: LayoutDashboard, flows: Boxes, simulator: FlaskConical, market: Recycle, engineers: Users, requests: ClipboardList,
-  impact: BarChart3, settings: Settings, inbox: Inbox, mine: GraduationCap, profile: UserRound, report: FileText,
+  impact: BarChart3, settings: Settings, inbox: Inbox, mine: GraduationCap, profile: UserRound, report: FileText, method: Calculator,
 };
 export type IconKey = keyof typeof ICONS;
 export interface NavItem { href: string; label: string; icon: IconKey; exact?: boolean; badge?: number }

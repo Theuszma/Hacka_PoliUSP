@@ -1,6 +1,9 @@
 import "server-only";
 import { db } from "./db";
 import { totals } from "./metrics";
+import { category } from "./catalog";
+import { benchmarkFor } from "./sectors";
+import { companyMci, insightsFor } from "./engine/insights";
 import { findSymbiosisMatches, type DemandWithCompany, type FlowWithCompany } from "./matching";
 
 const place = { select: { id: true, name: true, lat: true, lng: true } } as const;
@@ -40,4 +43,26 @@ export async function companyHistory(companyId: string, months: string[]) {
     const flows = records.filter((r) => r.month === month).map((r) => ({ ...r, id: r.flow.id, name: r.flow.name, category: r.flow.category, unit: r.flow.unit }));
     return { month, hasData: flows.length > 0, ...totals(flows) };
   });
+}
+
+/**
+ * Diagnóstico do motor de cálculo para uma empresa: alertas por insumo, MCI e
+ * massa de insumo que já vem de resíduo de outras empresas (trocas aceitas recebidas).
+ */
+export async function companyDiagnosis(companyId: string, sectorKey: string) {
+  const [flows, received] = await Promise.all([
+    db.materialFlow.findMany({ where: { companyId }, include: { records: { orderBy: { month: "desc" }, take: 24 } }, orderBy: { createdAt: "asc" } }),
+    db.exchange.findMany({ where: { toId: companyId, status: "ACCEPTED" }, include: { flow: true } }),
+  ]);
+  const recycledFeedKg: Record<string, number> = {};
+  for (const e of received) {
+    const target = flows.find((f) => f.category === e.flow.category);
+    if (target) recycledFeedKg[target.id] = (recycledFeedKg[target.id] ?? 0) + e.quantity * category(e.flow.category).kgPerUnit;
+  }
+  const insightFlows = flows.map((f) => ({
+    ...f,
+    lossHistory: f.records.length ? f.records.map((r) => r.lossRate).reverse() : [f.lossRate],
+    benchmark: benchmarkFor(sectorKey, f.category),
+  }));
+  return { flows: insightFlows, insights: insightsFor(insightFlows), mci: companyMci(flows, recycledFeedKg), recycledFeedKg };
 }
