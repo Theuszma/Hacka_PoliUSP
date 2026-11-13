@@ -29,6 +29,7 @@ O **Elo** é uma plataforma web com dois lados:
 Requisitos: **Node.js 20 ou mais novo**.
 
 ```bash
+cp .env.example .env   # no Windows: copy .env.example .env
 npm run setup     # instala dependências, cria o banco SQLite e carrega os dados de exemplo
 npm run dev       # http://localhost:3000
 ```
