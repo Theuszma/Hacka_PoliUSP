@@ -41,10 +41,10 @@ function NavLinks({ sections, onNavigate }: { sections: NavSection[]; onNavigate
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "group flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium transition-colors",
-                  active ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  active ? "bg-brand-soft text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                 )}
               >
-                <Icon className={cn("size-4 shrink-0", active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")} />
+                <Icon className={cn("size-4 shrink-0", active ? "text-brand" : "text-muted-foreground group-hover:text-foreground")} />
                 <span className="flex-1 truncate">{item.label}</span>
                 {item.badge ? <span className="min-w-5 rounded-full bg-brand px-1.5 text-center text-[10.5px] font-semibold leading-5 text-brand-foreground">{item.badge}</span> : null}
               </Link>

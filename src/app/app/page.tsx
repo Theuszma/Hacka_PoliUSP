@@ -109,10 +109,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Prejuízo com resíduos" value={money(t.loss)} unit="/mês" icon={<TrendingDown />} delta={dLoss?.text} deltaGood={dLoss?.down} hint={!dLoss && `${money(yearLoss)} nos últimos 12 meses`} />
-        <Stat label="Taxa de desperdício" value={pct(t.wasteRate, 1)} icon={<Factory />} delta={dRate?.text} deltaGood={dRate?.down} hint={!dRate && `de ${money(t.purchase)} comprados`} />
-        <Stat label="CO₂e no material perdido" value={tons(t.embodiedCo2)} unit="/mês" icon={<Leaf />} delta={dCo2?.text} deltaGood={dCo2?.down} hint={!dCo2 && `${tons(t.avoidedCo2)} evitados no destino`} />
-        <Stat label="Circularidade" value={pct(t.circularity)} icon={<Recycle />} hint={<Progress value={t.circularity * 100} className="mt-1 w-full" />} />
+        <Stat tone="rose" label="Prejuízo com resíduos" value={money(t.loss)} unit="/mês" icon={<TrendingDown />} delta={dLoss?.text} deltaGood={dLoss?.down} hint={!dLoss && `${money(yearLoss)} nos últimos 12 meses`} />
+        <Stat tone="amber" label="Taxa de desperdício" value={pct(t.wasteRate, 1)} icon={<Factory />} delta={dRate?.text} deltaGood={dRate?.down} hint={!dRate && `de ${money(t.purchase)} comprados`} />
+        <Stat tone="sky" label="CO₂e no material perdido" value={tons(t.embodiedCo2)} unit="/mês" icon={<Leaf />} delta={dCo2?.text} deltaGood={dCo2?.down} hint={!dCo2 && `${tons(t.avoidedCo2)} evitados no destino`} />
+        <Stat tone="emerald" label="Circularidade" value={pct(t.circularity)} icon={<Recycle />} hint={<Progress value={t.circularity * 100} className="mt-1 w-full" />} />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">

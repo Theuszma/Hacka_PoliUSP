@@ -20,10 +20,10 @@ async function Content() {
     <>
       <PageHeader eyebrow="Atualizado em tempo real" title="Impacto da rede" description="Resultados de todas as indústrias e engenheiros do Elo, calculados a partir das trocas aceitas e das demandas concluídas." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Resíduo desviado do aterro" value={tons(n.divertedKg)} unit="/mês" icon={<Truck />} hint={`${n.activeExchanges} trocas ativas`} />
-        <Stat label="Valor gerado nas trocas" value={money(n.exchangeValue)} unit="/mês" icon={<PiggyBank />} hint="receita de quem envia + economia de quem recebe" />
-        <Stat label="CO₂e evitado" value={tons(n.co2Avoided)} unit="/mês" icon={<Leaf />} hint="matéria-prima virgem substituída" />
-        <Stat label="Engenharia aplicada" value={num(n.engineeringHours)} unit="h" icon={<Clock />} hint={`${money(n.engineeringSavings)}/mês economizados`} />
+        <Stat tone="emerald" label="Resíduo desviado do aterro" value={tons(n.divertedKg)} unit="/mês" icon={<Truck />} hint={`${n.activeExchanges} trocas ativas`} />
+        <Stat tone="amber" label="Valor gerado nas trocas" value={money(n.exchangeValue)} unit="/mês" icon={<PiggyBank />} hint="receita de quem envia + economia de quem recebe" />
+        <Stat tone="sky" label="CO₂e evitado" value={tons(n.co2Avoided)} unit="/mês" icon={<Leaf />} hint="matéria-prima virgem substituída" />
+        <Stat tone="violet" label="Engenharia aplicada" value={num(n.engineeringHours)} unit="h" icon={<Clock />} hint={`${money(n.engineeringSavings)}/mês economizados`} />
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">

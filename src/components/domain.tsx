@@ -5,14 +5,23 @@ import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { cn } from "./ui/cn";
 
-export function Stat({ label, value, unit, hint, delta, deltaGood, icon, className }: {
-  label: string; value: ReactNode; unit?: string; hint?: ReactNode; delta?: string | null; deltaGood?: boolean; icon?: ReactNode; className?: string;
+const STAT_TONES = {
+  neutral: "bg-muted text-muted-foreground",
+  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  rose: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  sky: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+  violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+} as const;
+
+export function Stat({ label, value, unit, hint, delta, deltaGood, icon, className, tone = "neutral" }: {
+  label: string; value: ReactNode; unit?: string; hint?: ReactNode; delta?: string | null; deltaGood?: boolean; icon?: ReactNode; className?: string; tone?: keyof typeof STAT_TONES;
 }) {
   return (
     <Card className={cn("p-5", className)}>
       <div className="flex items-center justify-between gap-2 text-[13px] font-medium text-muted-foreground">
         <span>{label}</span>
-        {icon && <span className="text-muted-foreground/70 [&_svg]:size-4">{icon}</span>}
+        {icon && <span className={cn("grid size-8 place-items-center rounded-lg [&_svg]:size-4", STAT_TONES[tone])}>{icon}</span>}
       </div>
       <div className="mt-2 flex items-baseline gap-1.5">
         <span className="tabular text-[26px] font-semibold leading-none tracking-tight">{value}</span>

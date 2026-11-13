@@ -23,10 +23,10 @@ export default async function ProfilePage() {
     <>
       <PageHeader title="Perfil e horas" description="Suas horas de extensão e o resultado gerado para as indústrias." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Horas de extensão" value={num(hours)} unit="h" icon={<Clock />} hint={`${done.length} projetos concluídos`} />
-        <Stat label="Economia gerada" value={money(saved)} unit="/mês" icon={<PiggyBank />} hint={`${money(saved * 12)} por ano`} />
-        <Stat label="Indústrias atendidas" value={new Set(done.map((r) => r.companyId)).size} icon={<Factory />} />
-        <Stat label="Avaliação" value={num(e.rating, 1)} unit="/ 5" icon={<Star />} />
+        <Stat tone="violet" label="Horas de extensão" value={num(hours)} unit="h" icon={<Clock />} hint={`${done.length} projetos concluídos`} />
+        <Stat tone="emerald" label="Economia gerada" value={money(saved)} unit="/mês" icon={<PiggyBank />} hint={`${money(saved * 12)} por ano`} />
+        <Stat tone="sky" label="Indústrias atendidas" value={new Set(done.map((r) => r.companyId)).size} icon={<Factory />} />
+        <Stat tone="amber" label="Avaliação" value={num(e.rating, 1)} unit="/ 5" icon={<Star />} />
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div>
