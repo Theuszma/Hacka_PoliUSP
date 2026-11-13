@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design system Elo: neutros zinco, marca em verde-esmeralda, primário escuro (estilo Vercel/Linear). */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --subtle: 240 5% 98.4%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 88%;
+    --ring: 158 64% 40%;
+    --brand: 158 64% 36%;
+    --brand-foreground: 0 0% 100%;
+    --brand-soft: 152 76% 95%;
+    --success: 158 64% 32%;
+    --success-soft: 152 76% 95%;
+    --warning: 32 95% 40%;
+    --warning-soft: 48 100% 94%;
+    --danger: 0 72% 48%;
+    --danger-soft: 0 86% 97%;
+    --info: 217 91% 50%;
+    --info-soft: 214 100% 97%;
+    color-scheme: light;
+  }
+  .dark {
+    --background: 240 6% 6%;
+    --foreground: 0 0% 96%;
+    --subtle: 240 5% 8%;
+    --card: 240 5% 8.5%;
+    --card-foreground: 0 0% 96%;
+    --popover: 240 5% 9.5%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 240 6% 10%;
+    --muted: 240 4% 14%;
+    --muted-foreground: 240 5% 62%;
+    --border: 240 4% 16%;
+    --input: 240 4% 20%;
+    --ring: 158 64% 45%;
+    --brand: 158 60% 45%;
+    --brand-foreground: 240 6% 6%;
+    --brand-soft: 160 50% 12%;
+    --success: 158 60% 48%;
+    --success-soft: 160 50% 11%;
+    --warning: 38 92% 55%;
+    --warning-soft: 35 60% 11%;
+    --danger: 0 84% 64%;
+    --danger-soft: 0 50% 12%;
+    --info: 213 94% 66%;
+    --info-soft: 220 50% 13%;
+    color-scheme: dark;
+  }
+
+  * { @apply border-border; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  h1, h2, h3, h4 { @apply tracking-tight; text-wrap: balance; }
+  :focus-visible { @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background; }
+  ::selection { @apply bg-brand/20; }
+}
+
+@layer utilities {
+  .tabular { font-variant-numeric: tabular-nums; }
+  .bg-grid {
+    background-image: linear-gradient(to right, hsl(var(--border) / 0.6) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.6) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
