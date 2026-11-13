@@ -9,7 +9,7 @@ function collectErrors(page: Page) {
   return errors;
 }
 
-async function demo(page: Page, who: "Indústria" | "Engenheira") {
+async function demo(page: Page, who: "Indústria" | "Engenheira" | "Mentor") {
   await page.goto("/entrar");
   await page.getByRole("button", { name: who }).click();
   await page.waitForURL(who === "Indústria" ? "**/app" : "**/eng");
@@ -127,7 +127,7 @@ test("indústria: insumos, importação, detalhe, troca e convite", async ({ pag
   expect(errors).toEqual([]);
 });
 
-test("engenheiro assume e conclui a demanda", async ({ browser }) => {
+test("estudante entrega e mentor valida a demanda", async ({ browser }) => {
   test.skip(!requestUrl, "depende do teste anterior");
   const page = await (await browser.newContext()).newPage();
   const errors = collectErrors(page);
@@ -140,11 +140,25 @@ test("engenheiro assume e conclui a demanda", async ({ browser }) => {
   await page.getByRole("button", { name: "Concluir demanda" }).click();
   await page.fill("#c-out", "Novo plano de corte reduziu a perda de 22% para 15%.");
   await page.fill("#c-sav", "2500");
-  await page.getByRole("button", { name: "Concluir demanda" }).last().click();
-  await expect(page.getByText("Economia validada de R$ 2.500 por mês")).toBeVisible();
+  await page.getByRole("button", { name: "Enviar para revisão" }).click();
+  await expect(page.getByText("Aguardando a revisão de um(a) mentor(a)")).toBeVisible();
+
+  const mentor = await (await browser.newContext()).newPage();
+  const mentorErrors = collectErrors(mentor);
+  await demo(mentor, "Mentor");
+  await mentor.goto("/eng/revisoes");
+  await expect(mentor.getByText("Reduzir perda de chapa de aço SAE 1020").first()).toBeVisible();
+  await mentor.goto(requestUrl);
+  await mentor.fill("#r-sav", "2300");
+  await mentor.fill("#r-note", "Resultado consistente; ajustei a economia ao lote medido.");
+  await mentor.getByRole("button", { name: "Validar entrega" }).click();
+  await expect(mentor.getByText("Economia validada de R$ 2.300 por mês")).toBeVisible();
+  await expect(mentor.getByText(/Validada por Carlos Menezes, mentor/)).toBeVisible();
+
   await page.goto("/eng/perfil");
   await expect(page.getByText("Horas de extensão").first()).toBeVisible();
   expect(errors).toEqual([]);
+  expect(mentorErrors).toEqual([]);
 });
 
 test("cadastro de engenheiro com perfil técnico", async ({ page }) => {

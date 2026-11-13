@@ -40,11 +40,19 @@ export async function AppShell({ user, children }: { user: SessionUser; children
     ];
     shellUser = { name: user.name, email: user.email, org: user.company.name, orgSubtitle: `${sector(user.company.sector).label}`, isDemo: user.isDemo };
   } else {
-    const open = await db.supportRequest.count({ where: { status: "OPEN" } });
+    const isMentor = user.engineer?.kind === "MENTOR";
+    const [open, toReview] = await Promise.all([
+      db.supportRequest.count({ where: { status: "OPEN" } }),
+      isMentor ? db.supportRequest.count({ where: { status: "REVIEW", assigneeId: { not: user.engineer!.id } } }) : Promise.resolve(0),
+    ]);
     settingsHref = "/eng/perfil";
     sections = [
       { items: [{ href: "/eng", label: "Demandas abertas", icon: "inbox", exact: true, badge: open }] },
-      { title: "Meu trabalho", items: [{ href: "/eng/minhas", label: "Minhas demandas", icon: "mine" }, { href: "/eng/perfil", label: "Perfil e horas", icon: "profile" }] },
+      { title: "Meu trabalho", items: [
+        { href: "/eng/minhas", label: "Minhas demandas", icon: "mine" },
+        ...(isMentor ? [{ href: "/eng/revisoes", label: "Revisões", icon: "review" as const, badge: toReview }] : []),
+        { href: "/eng/perfil", label: "Perfil e horas", icon: "profile" },
+      ] },
       { title: "Rede", items: [{ href: "/impacto", label: "Impacto da rede", icon: "impact" }, { href: "/metodologia", label: "Como calculamos", icon: "method" }] },
     ];
     shellUser = {

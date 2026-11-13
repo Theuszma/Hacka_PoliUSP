@@ -367,13 +367,81 @@ export async function completeRequest(_prev: ActionState, formData: FormData): P
   if (!req || req.assigneeId !== user.engineer.id || req.status !== "IN_PROGRESS") return { ok: false, message: "Só quem assumiu pode concluir" };
   const parsed = completeSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
+  const saved = money(parsed.data.savedPerMonth);
+
+  // Mentores validam o próprio trabalho; entregas de estudantes passam pela revisão de um mentor.
+  if (user.engineer.kind === "MENTOR") {
+    await db.supportRequest.update({
+      where: { id },
+      data: { status: "DONE", ...parsed.data, reviewerId: user.engineer.id, reviewedAt: new Date(), updates: { create: { kind: "EVENT", body: `Concluída por mentor(a) · economia validada de ${saved}/mês` } } },
+    });
+    await notifyCompany(req.companyId, { title: "Demanda concluída", body: req.title, href: `/demandas/${id}` });
+    revalidatePath("/", "layout");
+    return { ok: true, message: "Demanda concluída e validada." };
+  }
+
   await db.supportRequest.update({
     where: { id },
-    data: { status: "DONE", ...parsed.data, updates: { create: { kind: "EVENT", body: `Concluída · economia validada de ${money(parsed.data.savedPerMonth)}/mês` } } },
+    data: { status: "REVIEW", ...parsed.data, updates: { create: { kind: "EVENT", body: `Entregue para revisão de um(a) mentor(a) · economia estimada de ${saved}/mês` } } },
   });
-  await notifyCompany(req.companyId, { title: "Demanda concluída", body: req.title, href: `/demandas/${id}` });
+  const mentors = await db.engineer.findMany({ where: { kind: "MENTOR", id: { not: user.engineer.id } }, select: { userId: true } });
+  if (mentors.length) await db.notification.createMany({ data: mentors.map((m) => ({ userId: m.userId, title: `${user.name} entregou uma demanda para revisão`, body: req.title, href: `/demandas/${id}` })) });
+  await notifyCompany(req.companyId, { title: "Entrega recebida, em revisão por um(a) mentor(a)", body: req.title, href: `/demandas/${id}` });
   revalidatePath("/", "layout");
-  return { ok: true, message: "Demanda concluída. Horas registradas no seu perfil." };
+  return { ok: true, message: "Entrega enviada. Um(a) mentor(a) vai revisar antes de validar a economia." };
+}
+
+const reviewSchema = z.object({
+  decision: z.enum(["approve", "changes"]),
+  note: z.string().trim().max(2000).optional().transform((v) => v || ""),
+  savedPerMonth: z.coerce.number({ message: "Informe um número" }).min(0, "Não pode ser negativo").optional(),
+});
+
+/** Mentor(a) valida a entrega de um(a) estudante ou pede ajustes. */
+export async function reviewRequest(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireEngineerUser();
+  if (user.engineer.kind !== "MENTOR") return { ok: false, message: "Só mentores revisam entregas" };
+  const id = String(formData.get("id"));
+  const req = await db.supportRequest.findUnique({ where: { id }, include: { assignee: true } });
+  if (!req || req.status !== "REVIEW") return { ok: false, message: "Essa entrega não está aguardando revisão" };
+  if (req.assigneeId === user.engineer.id) return { ok: false, message: "Outra pessoa precisa revisar o seu trabalho" };
+  const parsed = reviewSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
+  const { decision, note } = parsed.data;
+
+  if (decision === "changes") {
+    if (note.length < 10) return { ok: false, errors: { note: "Explique o que precisa ser ajustado" } };
+    await db.supportRequest.update({
+      where: { id },
+      data: {
+        status: "IN_PROGRESS", reviewerId: user.engineer.id,
+        updates: { create: [
+          { kind: "EVENT", body: `${user.name} pediu ajustes na entrega` },
+          { kind: "MESSAGE", body: note, authorId: user.id },
+        ] },
+      },
+    });
+    if (req.assignee) await notifyUser(req.assignee.userId, { title: `${user.name} pediu ajustes`, body: req.title, href: `/demandas/${id}` });
+    revalidatePath("/", "layout");
+    return { ok: true, message: "Pedido de ajuste enviado ao(à) estudante." };
+  }
+
+  const savedPerMonth = parsed.data.savedPerMonth ?? req.savedPerMonth ?? 0;
+  const adjusted = req.savedPerMonth !== null && Math.abs(savedPerMonth - req.savedPerMonth) >= 1;
+  await db.supportRequest.update({
+    where: { id },
+    data: {
+      status: "DONE", savedPerMonth, reviewerId: user.engineer.id, reviewedAt: new Date(),
+      updates: { create: [
+        ...(note ? [{ kind: "MESSAGE", body: note, authorId: user.id }] : []),
+        { kind: "EVENT", body: `Validada por ${user.name}${adjusted ? " (economia ajustada)" : ""} · economia de ${money(savedPerMonth)}/mês` },
+      ] },
+    },
+  });
+  if (req.assignee) await notifyUser(req.assignee.userId, { title: `${user.name} validou sua entrega`, body: `${req.title} · ${money(savedPerMonth)}/mês`, href: `/demandas/${id}` });
+  await notifyCompany(req.companyId, { title: "Demanda concluída e validada por mentor(a)", body: req.title, href: `/demandas/${id}` });
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Entrega validada. As horas entram no perfil do(a) estudante." };
 }
 
 export async function postUpdate(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -386,11 +454,13 @@ export async function postUpdate(_prev: ActionState, formData: FormData): Promis
   if (!req) return { ok: false, message: "Demanda não encontrada" };
   const isCompany = user.companyId === req.companyId;
   const isAssignee = !!user.engineer && user.engineer.id === req.assigneeId;
-  if (!isCompany && !isAssignee) return { ok: false, message: "Só a empresa e o responsável podem escrever aqui" };
+  const isReviewer = user.engineer?.kind === "MENTOR" && req.status === "REVIEW";
+  if (!isCompany && !isAssignee && !isReviewer) return { ok: false, message: "Só a empresa, o responsável e o(a) mentor(a) revisor(a) podem escrever aqui" };
   await db.requestUpdate.create({ data: { requestId: id, authorId: user.id, body } });
   const n = { title: `Nova mensagem de ${user.name}`, body: body.slice(0, 120), href: `/demandas/${id}` };
   if (isCompany && req.assignee) await notifyUser(req.assignee.userId, n);
-  if (isAssignee) await notifyCompany(req.companyId, n);
+  if (isAssignee || isReviewer) await notifyCompany(req.companyId, n);
+  if (isReviewer && !isAssignee && req.assignee) await notifyUser(req.assignee.userId, n);
   revalidatePath(`/demandas/${id}`);
   return { ok: true };
 }

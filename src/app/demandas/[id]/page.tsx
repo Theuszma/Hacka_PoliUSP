@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { assignRequest } from "@/app/actions";
@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { money, relativeDate } from "@/lib/format";
 import { RequestStatusBadge } from "@/components/domain";
 import { ActionButton } from "@/components/forms";
-import { CompleteButton, MessageForm } from "@/components/request-forms";
+import { CompleteButton, MessageForm, ReviewPanel } from "@/components/request-forms";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/misc";
@@ -23,18 +23,23 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
       company: true,
       assignee: { include: { user: true } },
       invited: { include: { user: true } },
+      reviewer: { include: { user: true } },
       updates: { include: { author: true }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!r) notFound();
   const isCompany = user.companyId === r.companyId;
   const isAssignee = !!user.engineer && user.engineer.id === r.assigneeId;
+  const isMentor = user.engineer?.kind === "MENTOR";
+  const canReview = isMentor && !isAssignee && r.status === "REVIEW";
   const canAssign = !!user.engineer && r.status === "OPEN";
-  const canWrite = (isCompany || isAssignee) && r.status !== "DONE";
+  const canWrite = (isCompany || isAssignee || canReview) && r.status !== "DONE";
+  const studentWork = r.assignee?.kind === "STUDENT";
   const back = isCompany ? "/app/demandas" : isAssignee ? "/eng/minhas" : user.role === "COMPANY" ? "/app" : "/eng";
   const steps = [
     { label: "Publicada", done: true },
     { label: "Em andamento", done: r.status !== "OPEN" },
+    ...(studentWork || r.status === "REVIEW" ? [{ label: "Revisão por mentor(a)", done: r.status === "DONE" }] : []),
     { label: "Concluída", done: r.status === "DONE" },
   ];
 
@@ -59,6 +64,19 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
           {r.status === "DONE" && r.outcome && (
             <Card className="border-success/40 bg-success-soft/40">
               <CardHeader title="Resultado" description={r.savedPerMonth ? `Economia validada de ${money(r.savedPerMonth)} por mês` : undefined} />
+              <p className="px-5 text-[13.5px]">{r.outcome}</p>
+              {r.reviewer && (
+                <p className="mx-5 mb-5 mt-3 flex items-center gap-1.5 text-xs text-success"><ShieldCheck className="size-3.5" />
+                  {r.reviewer.id === r.assigneeId ? `Executada e validada por ${r.reviewer.user.name}, mentor(a)` : `Validada por ${r.reviewer.user.name}, mentor(a) · ${r.reviewer.course}`}
+                </p>
+              )}
+              {!r.reviewer && <div className="pb-5" />}
+            </Card>
+          )}
+
+          {r.status === "REVIEW" && r.outcome && (
+            <Card className="border-brand/30 bg-brand-soft/40">
+              <CardHeader title="Entrega em revisão" description={r.savedPerMonth !== null ? `Economia estimada pelo(a) estudante: ${money(r.savedPerMonth)} por mês` : undefined} />
               <p className="px-5 pb-5 text-[13.5px]">{r.outcome}</p>
             </Card>
           )}
@@ -86,7 +104,7 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
               ))}
             </ol>
             {canWrite && <div className="border-t p-4"><MessageForm id={r.id} /></div>}
-            {!canWrite && r.status !== "DONE" && <p className="border-t px-5 py-3 text-xs text-muted-foreground">Só a empresa e quem assumiu a demanda podem escrever aqui.</p>}
+            {!canWrite && r.status !== "DONE" && <p className="border-t px-5 py-3 text-xs text-muted-foreground">Só a empresa, quem assumiu a demanda e mentores (durante a revisão) podem escrever aqui.</p>}
           </Card>
         </div>
 
@@ -108,8 +126,16 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
             {canAssign && (
               <ActionButton className="mt-5 w-full" variant="brand" action={assignRequest} fields={{ id: r.id }}>Assumir demanda</ActionButton>
             )}
-            {isAssignee && r.status === "IN_PROGRESS" && <div className="mt-5"><CompleteButton id={r.id} /></div>}
+            {isAssignee && r.status === "IN_PROGRESS" && <div className="mt-5"><CompleteButton id={r.id} mentor={isMentor} /></div>}
+            {isAssignee && r.status === "REVIEW" && <p className="mt-5 rounded-lg bg-brand-soft p-3 text-xs text-brand">Entrega enviada. Aguardando a revisão de um(a) mentor(a).</p>}
           </Card>
+          {canReview && (
+            <Card className="border-brand/40 p-5">
+              <p className="mb-1 flex items-center gap-1.5 text-[13.5px] font-medium"><ShieldCheck className="size-4 text-brand" />Revisão de mentor(a)</p>
+              <p className="mb-4 text-xs text-muted-foreground">Confira o resultado e a economia antes de validar. Ao validar, a empresa recebe o selo e as horas vão para o perfil do(a) estudante.</p>
+              <ReviewPanel id={r.id} estimated={r.savedPerMonth} />
+            </Card>
+          )}
           {(r.assignee || r.invited) && (
             <Card className="p-5">
               <p className="mb-3 text-xs font-medium text-muted-foreground">{r.assignee ? "Responsável" : "Convidado(a)"}</p>

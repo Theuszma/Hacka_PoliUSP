@@ -12,7 +12,7 @@ import { bestMatchByFlow } from "@/lib/matching";
 import { flowMetrics, rankByLoss, totals } from "@/lib/metrics";
 import { benchmarkFor, sector } from "@/lib/sectors";
 import { PageHeader } from "@/components/shell";
-import { Stat, DestinationBadge, ExchangeStatusBadge } from "@/components/domain";
+import { Stat, DestinationBadge, ExchangeStatusBadge, RequestStatusBadge } from "@/components/domain";
 import { DestinationDonut, LossByMaterial, LossTrend } from "@/components/charts";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -219,7 +219,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                     <p className="truncate text-[13.5px] font-medium">{r.title}</p>
                     <p className="truncate text-xs text-muted-foreground">{r.assignee ? `com ${r.assignee.user.name}` : "aguardando engenheiro(a)"} · {money(r.monthlyLoss)}/mês em jogo</p>
                   </div>
-                  <Badge tone={r.status === "OPEN" ? "warning" : "info"} dot>{r.status === "OPEN" ? "Aberta" : "Em andamento"}</Badge>
+                  <RequestStatusBadge status={r.status} />
                 </Link>
               ))}
             </div>

@@ -1,4 +1,4 @@
-import { Building2, GraduationCap } from "lucide-react";
+import { Building2, GraduationCap, ShieldCheck } from "lucide-react";
 import { demoSignIn } from "@/app/actions";
 import { SignInForm } from "@/components/auth-forms";
 import { SubmitButton } from "@/components/forms";
@@ -16,7 +16,7 @@ export default function SignInPage() {
       <div className="relative text-center text-xs text-muted-foreground before:absolute before:inset-x-0 before:top-1/2 before:h-px before:bg-border">
         <span className="relative bg-background px-2">ou explore uma conta de demonstração</span>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid gap-2 sm:grid-cols-3">
         <form action={demoSignIn}>
           <input type="hidden" name="email" value="rosana@ipiranga.demo" />
           <SubmitButton variant="outline" className="w-full" pendingText="Abrindo…"><Building2 />Indústria</SubmitButton>
@@ -24,6 +24,10 @@ export default function SignInPage() {
         <form action={demoSignIn}>
           <input type="hidden" name="email" value="ana@poli.demo" />
           <SubmitButton variant="outline" className="w-full" pendingText="Abrindo…"><GraduationCap />Engenheira</SubmitButton>
+        </form>
+        <form action={demoSignIn}>
+          <input type="hidden" name="email" value="carlos@mentor.demo" />
+          <SubmitButton variant="outline" className="w-full" pendingText="Abrindo…"><ShieldCheck />Mentor</SubmitButton>
         </form>
       </div>
     </div>

@@ -381,6 +381,7 @@ async function main() {
   const request = async (r: {
     company: string; title: string; category: string; hours: number; status: string; briefing: string; at: Date;
     assignee?: string; invited?: string; outcome?: string; saved?: number; lossOverride?: number; updates?: U[];
+    reviewer?: string; reviewedAt?: Date;
   }) => {
     const updates: U[] = [{ kind: "EVENT", body: "Demanda publicada na rede", at: r.at }, ...(r.updates ?? [])];
     const last = updates[updates.length - 1].at;
@@ -389,6 +390,7 @@ async function main() {
         companyId: ids[r.company].id, title: r.title, category: r.category, estimatedHours: r.hours, status: r.status, briefing: r.briefing,
         monthlyLoss: r.lossOverride ?? (ids[r.company].flows[r.category] ? await lossOf(r.company, r.category) : 0),
         assigneeId: r.assignee ? eng[r.assignee].id : null, invitedId: r.invited ? eng[r.invited].id : null,
+        reviewerId: r.reviewer ? eng[r.reviewer].id : null, reviewedAt: r.reviewedAt ?? null,
         outcome: r.outcome, savedPerMonth: r.saved, createdAt: r.at, updatedAt: last,
         updates: {
           create: updates.map((u) => ({
@@ -403,37 +405,42 @@ async function main() {
   // Concluídas (resultado já aparece no histórico das empresas)
   await request({
     company: "ipiranga", title: "Pallets descartados depois de uma viagem", category: "madeira", hours: 16, status: "DONE", at: monthsAgoDate(7),
-    assignee: "Vitor", lossOverride: 1900, saved: 640,
+    assignee: "Vitor", lossOverride: 1900, saved: 640, reviewer: "Carlos", reviewedAt: monthsAgoDate(5),
     briefing: "85% dos pallets que recebemos vão para o aterro depois de uma única entrega. Queremos um sistema de retorno com clientes e fornecedores.",
     outcome: "Acordo de logística reversa com os 4 maiores clientes e etiqueta de controle por pallet. Perda caiu de 85% para 60%.",
     updates: [
       { kind: "EVENT", body: "Vitor Araújo assumiu a demanda", at: monthsAgoDate(7, -2) },
       { who: "Vitor", body: "Mapeei o fluxo: 70% dos pallets saem para 4 clientes. Proponho um acordo de devolução na próxima entrega.", at: monthsAgoDate(6, 20) },
       { company: "ipiranga", body: "Três clientes toparam. O quarto pediu para cobrarmos caução.", at: monthsAgoDate(6, 5) },
-      { kind: "EVENT", body: "Concluída · economia validada de R$ 640/mês", at: monthsAgoDate(5) },
+      { kind: "EVENT", body: "Entregue para revisão de um(a) mentor(a) · economia estimada de R$ 700/mês", at: monthsAgoDate(5, 4) },
+      { who: "Carlos", body: "Bom trabalho. A caução do quarto cliente ainda não está garantida, então validei a economia dos três acordos fechados.", at: monthsAgoDate(5, 1) },
+      { kind: "EVENT", body: "Validada por Carlos Menezes (economia ajustada) · economia de R$ 640/mês", at: monthsAgoDate(5) },
     ],
   });
   await request({
     company: "taboao", title: "Nesting de peças na bobina de 2,0 mm", category: "aco", hours: 24, status: "DONE", at: monthsAgoDate(5),
-    assignee: "Ana", lossOverride: 7350, saved: 4200,
+    assignee: "Ana", lossOverride: 7350, saved: 4200, reviewer: "Carlos", reviewedAt: monthsAgoDate(3),
     briefing: "21% da bobina vira retalho. Queremos revisar o encaixe das peças e a largura da bobina comprada.",
     outcome: "Novo plano de nesting e troca da largura da bobina de 1.200 para 1.000 mm. Perda caiu de 21% para 15%; retalhos seguem para a Ferragens Rudge.",
     updates: [
       { kind: "EVENT", body: "Ana Ribeiro assumiu a demanda", at: monthsAgoDate(5, -1) },
       { who: "Ana", body: "Simulei 3 layouts no software da Poli. O melhor reduz o retalho em 6 pontos, sem mudar ferramenta.", at: monthsAgoDate(4, 10) },
       { company: "taboao", body: "Rodamos o layout novo em um lote piloto. Bateu com a simulação.", at: monthsAgoDate(3, 15) },
-      { kind: "EVENT", body: "Concluída · economia validada de R$ 4.200/mês", at: monthsAgoDate(3) },
+      { kind: "EVENT", body: "Entregue para revisão de um(a) mentor(a) · economia estimada de R$ 4.200/mês", at: monthsAgoDate(3, 3) },
+      { who: "Carlos", body: "Conferi o lote piloto e o novo layout de nesting. Economia consistente com a medição.", at: monthsAgoDate(3, 1) },
+      { kind: "EVENT", body: "Validada por Carlos Menezes · economia de R$ 4.200/mês", at: monthsAgoDate(3) },
     ],
   });
   await request({
     company: "panificadora", title: "Sobras de massa e farinha vencida", category: "organico", hours: 12, status: "DONE", at: monthsAgoDate(3),
-    assignee: "Pedro", lossOverride: 5800, saved: 3100,
+    assignee: "Pedro", lossOverride: 5800, saved: 3100, reviewer: "Henrique", reviewedAt: monthsAgoDate(2),
     briefing: "6% da farinha vira sobra. Queremos reduzir e dar um destino melhor que o aterro.",
     outcome: "Planejamento de produção por dia da semana e envio das sobras para a Composta ABC.",
     updates: [
       { kind: "EVENT", body: "Pedro Alves assumiu a demanda", at: monthsAgoDate(3, -1) },
       { who: "Pedro", body: "As sobras se concentram na segunda e na sexta. Sugiro ajustar a massa desses dias e oferecer o excedente para compostagem.", at: monthsAgoDate(2, 20) },
-      { kind: "EVENT", body: "Concluída · economia validada de R$ 3.100/mês", at: monthsAgoDate(2) },
+      { kind: "EVENT", body: "Entregue para revisão de um(a) mentor(a) · economia estimada de R$ 3.100/mês", at: monthsAgoDate(2, 2) },
+      { kind: "EVENT", body: "Validada por Henrique Sato · economia de R$ 3.100/mês", at: monthsAgoDate(2) },
     ],
   });
 
@@ -458,6 +465,20 @@ async function main() {
       { who: "Marina", body: "Visitei a cabine. O filtro está saturado e a pistola está a 40 cm da peça. Com ciclone e ajuste de distância dá para recuperar boa parte do pó.", at: monthsAgoDate(0, 9) },
       { company: "ipiranga", body: "Quanto custa o ciclone? Precisamos levar para a diretoria.", at: monthsAgoDate(0, 8) },
       { who: "Marina", body: "Pedi três orçamentos, entre R$ 18 e 26 mil. O retorno fica abaixo de 10 meses. Mando o comparativo até sexta.", at: monthsAgoDate(0, 1) },
+    ],
+  });
+
+  // Entregue por estudante, aguardando revisão de mentor(a)
+  await request({
+    company: "usinagem", title: "Sobremetal alto nas barras de aço 1045", category: "aco", hours: 14, status: "REVIEW", at: monthsAgoDate(1, 5),
+    assignee: "Gabriel", saved: 1800,
+    briefing: "28% da barra vira cavaco ou ponta. Queremos comprar no comprimento certo e reduzir o sobremetal sem perder qualidade.",
+    outcome: "Mapeei os 12 itens de maior giro: 7 podem ser comprados em barras de 3 m em vez de 6 m, e o sobremetal no diâmetro pode cair de 3 para 1,5 mm. Perda estimada passa de 28% para 21%.",
+    updates: [
+      { kind: "EVENT", body: "Gabriel Nunes assumiu a demanda", at: monthsAgoDate(1, 4) },
+      { who: "Gabriel", body: "Levantei o histórico de cortes dos últimos 3 meses. As pontas de barra respondem por metade da perda.", at: monthsAgoDate(0, 20) },
+      { company: "usinagem", body: "O fornecedor topa entregar em 3 m sem custo extra a partir de 500 kg.", at: monthsAgoDate(0, 9) },
+      { kind: "EVENT", body: "Entregue para revisão de um(a) mentor(a) · economia estimada de R$ 1.800/mês", at: monthsAgoDate(0, 2) },
     ],
   });
 
@@ -490,6 +511,7 @@ async function main() {
       { userId: ids.ipiranga.userId, title: "Nova mensagem de Marina Okada", body: "Pedi três orçamentos, entre R$ 18 e 26 mil…", href: "/app/demandas", createdAt: new Date(Date.now() - 22 * h) },
       { userId: ids.ipiranga.userId, title: "Lubrirrefino Diadema recusou sua proposta", body: "Óleo solúvel de corte", href: "/app/marketplace", createdAt: monthsAgoDate(2), readAt: monthsAgoDate(2) },
       { userId: ids.ipiranga.userId, title: "Demanda concluída", body: "Pallets descartados depois de uma viagem", href: "/app/demandas", createdAt: monthsAgoDate(5), readAt: monthsAgoDate(5) },
+      { userId: eng.Carlos.userId, title: "Gabriel Nunes entregou uma demanda para revisão", body: "Sobremetal alto nas barras de aço 1045", href: "/eng/revisoes", createdAt: new Date(Date.now() - 2 * 24 * h) },
       { userId: eng.Ana.userId, title: "Fundição Mauá convidou você", body: "Cavaco de alumínio contaminado com óleo", href: "/eng", createdAt: new Date(Date.now() - 20 * h) },
       { userId: eng.Ana.userId, title: "Estamparia Taboão validou sua economia", body: "R$ 4.200/mês com o novo nesting", href: "/eng/perfil", createdAt: monthsAgoDate(3), readAt: monthsAgoDate(3) },
     ],

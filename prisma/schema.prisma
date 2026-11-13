@@ -166,6 +166,7 @@ model Engineer {
 
   invited  SupportRequest[] @relation("Invited")
   assigned SupportRequest[] @relation("Assigned")
+  reviewed SupportRequest[] @relation("Reviewed")
 }
 
 /// Pedido de apoio técnico de uma PME para a rede de engenheiros.
@@ -178,13 +179,17 @@ model SupportRequest {
   briefing       String
   estimatedHours Int
   monthlyLoss    Float
-  status         String   @default("OPEN") // OPEN | IN_PROGRESS | DONE
+  status         String   @default("OPEN") // OPEN | IN_PROGRESS | REVIEW | DONE
   invitedId      String?
   invited        Engineer? @relation("Invited", fields: [invitedId], references: [id], onDelete: SetNull)
   assigneeId     String?
   assignee       Engineer? @relation("Assigned", fields: [assigneeId], references: [id], onDelete: SetNull)
   outcome        String? // resultado registrado ao concluir
-  savedPerMonth  Float? // economia mensal validada ao concluir
+  savedPerMonth  Float? // economia mensal: estimada na entrega, validada na revisão
+  /// mentor(a) que revisou a entrega de um(a) estudante
+  reviewerId     String?
+  reviewer       Engineer? @relation("Reviewed", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

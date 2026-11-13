@@ -1,9 +1,9 @@
 "use client";
 
-import { CheckCircle2, Send } from "lucide-react";
+import { CheckCircle2, RotateCcw, Send, ShieldCheck } from "lucide-react";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { completeRequest, postUpdate, type ActionState } from "@/app/actions";
+import { completeRequest, postUpdate, reviewRequest, type ActionState } from "@/app/actions";
 import { SubmitButton } from "./forms";
 import { Button } from "./ui/button";
 import { Field, Input, Textarea } from "./ui/form";
@@ -30,7 +30,7 @@ export function MessageForm({ id }: { id: string }) {
   );
 }
 
-function CompleteForm({ id }: { id: string }) {
+function CompleteForm({ id, mentor }: { id: string; mentor: boolean }) {
   const [state, action] = useActionState<ActionState, FormData>(completeRequest, null);
   const e = state?.errors ?? {};
   useEffect(() => {
@@ -41,23 +41,50 @@ function CompleteForm({ id }: { id: string }) {
     <form action={action} className="grid gap-4">
       <input type="hidden" name="id" value={id} />
       <Field label="O que foi feito e qual o resultado" htmlFor="c-out" error={e.outcome}><Textarea id="c-out" name="outcome" rows={4} placeholder="Ex.: novo plano de corte reduziu a perda de 18% para 11%, validado em 3 semanas de produção" /></Field>
-      <Field label="Economia mensal validada com a empresa (R$)" htmlFor="c-sav" error={e.savedPerMonth}><Input id="c-sav" name="savedPerMonth" type="number" min={0} step="any" /></Field>
+      <Field label={mentor ? "Economia mensal validada com a empresa (R$)" : "Economia mensal estimada (R$)"} hint={mentor ? undefined : "Um(a) mentor(a) revisa a entrega e valida esse número."} htmlFor="c-sav" error={e.savedPerMonth}><Input id="c-sav" name="savedPerMonth" type="number" min={0} step="any" /></Field>
       <div className="flex justify-end gap-2">
         <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
-        <SubmitButton variant="brand" pendingText="Concluindo…">Concluir demanda</SubmitButton>
+        <SubmitButton variant="brand" pendingText="Enviando…">{mentor ? "Concluir demanda" : "Enviar para revisão"}</SubmitButton>
       </div>
     </form>
   );
 }
 
-export function CompleteButton({ id }: { id: string }) {
+export function CompleteButton({ id, mentor = false }: { id: string; mentor?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button variant="brand" className="w-full"><CheckCircle2 />Concluir demanda</Button></DialogTrigger>
-      <DialogContent title="Concluir demanda" description="O resultado fica no histórico da empresa e as horas vão para o seu relatório de extensão.">
-        {open && <CompleteForm id={id} />}
+      <DialogContent title="Concluir demanda" description={mentor ? "O resultado fica no histórico da empresa." : "Um(a) mentor(a) revisa sua entrega antes de a economia ser validada. As horas vão para o seu relatório de extensão depois da validação."}>
+        {open && <CompleteForm id={id} mentor={mentor} />}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Painel do(a) mentor(a) para validar a entrega de um(a) estudante ou pedir ajustes. */
+export function ReviewPanel({ id, estimated }: { id: string; estimated: number | null }) {
+  const [state, action] = useActionState<ActionState, FormData>(reviewRequest, null);
+  const decision = useRef<HTMLInputElement>(null);
+  const e = state?.errors ?? {};
+  useEffect(() => {
+    if (state?.ok) toast.success(state.message ?? "Revisão registrada");
+    else if (state?.message) toast.error(state.message);
+  }, [state]);
+  return (
+    <form action={action} className="grid gap-3">
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="decision" ref={decision} defaultValue="approve" />
+      <Field label="Economia validada (R$/mês)" hint="Ajuste se a estimativa do(a) estudante não se sustenta." htmlFor="r-sav" error={e.savedPerMonth}>
+        <Input id="r-sav" name="savedPerMonth" type="number" min={0} step="any" defaultValue={estimated ?? undefined} />
+      </Field>
+      <Field label="Parecer" htmlFor="r-note" error={e.note}>
+        <Textarea id="r-note" name="note" rows={3} placeholder="O que está sólido, o que precisa de ajuste" />
+      </Field>
+      <div className="grid gap-2">
+        <SubmitButton variant="brand" pendingText="Enviando…" onClick={() => { if (decision.current) decision.current.value = "approve"; }}><ShieldCheck />Validar entrega</SubmitButton>
+        <SubmitButton variant="outline" pendingText="Enviando…" onClick={() => { if (decision.current) decision.current.value = "changes"; }}><RotateCcw />Pedir ajustes</SubmitButton>
+      </div>
+    </form>
   );
 }

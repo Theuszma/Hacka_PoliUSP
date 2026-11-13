@@ -51,6 +51,7 @@ export function DestinationBadge({ value }: { value: string }) {
 export function RequestStatusBadge({ status }: { status: string }) {
   if (status === "OPEN") return <Badge tone="info" dot>Aberta</Badge>;
   if (status === "IN_PROGRESS") return <Badge tone="warning" dot>Em andamento</Badge>;
+  if (status === "REVIEW") return <Badge tone="brand" dot>Em revisão</Badge>;
   return <Badge tone="success" dot>Concluída</Badge>;
 }
 

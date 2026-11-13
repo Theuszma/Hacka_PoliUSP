@@ -47,6 +47,9 @@ Quer rodar tudo dentro do Docker, sem Node na máquina? `docker compose up --bui
 - Ou use as contas de demonstração (botões em `/entrar` e "Ver demonstração" na página inicial). Senha de todas: `elo2026`.
   - Indústria: `rosana@ipiranga.demo` (Metalúrgica Ipiranga)
   - Engenheira: `ana@poli.demo` (Ana Ribeiro, estudante)
+  - Mentor: `carlos@mentor.demo` (Carlos Menezes, revisa as entregas dos estudantes)
+
+**Mentoria.** Quando um(a) estudante conclui uma demanda, a entrega fica "Em revisão". Um(a) mentor(a) sênior confere o resultado, pode ajustar a economia e valida, ou então pede ajustes. A empresa só vê a economia como validada, com o selo do(a) mentor(a), depois dessa revisão. Mentores que executam uma demanda validam o próprio trabalho.
 
 Para voltar o banco ao estado inicial: `npm run db:reset`. Se o Next mostrar erro de campo desconhecido do Prisma depois de atualizar o código, rode `npm run clean` e reinicie o `npm run dev`.
 
