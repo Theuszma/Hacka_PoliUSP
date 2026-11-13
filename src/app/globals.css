@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Identidade: chão de fábrica — grafite, papel técnico e o laranja da ODS 9 como única cor forte. */
+:root {
+  --bg: 243 244 240;
+  --surface: 255 255 255;
+  --sunken: 236 238 232;
+  --ink: 26 32 30;
+  --muted: 91 102 97;
+  --line: 217 222 215;
+  --accent: 217 88 26;
+  --accent-ink: 255 255 255;
+  --accent-soft: 251 230 218;
+  --ochre: 169 123 31;
+  --ochre-soft: 244 235 213;
+  --good: 45 122 77;
+  --good-soft: 220 239 227;
+  --bad: 178 58 44;
+  --bad-soft: 246 222 218;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: 17 21 20;
+    --surface: 25 30 28;
+    --sunken: 33 39 37;
+    --ink: 230 235 232;
+    --muted: 152 163 158;
+    --line: 45 53 50;
+    --accent: 240 118 58;
+    --accent-ink: 26 14 7;
+    --accent-soft: 58 35 24;
+    --ochre: 211 165 72;
+    --ochre-soft: 53 43 22;
+    --good: 91 190 133;
+    --good-soft: 23 48 31;
+    --bad: 236 117 100;
+    --bad-soft: 58 30 26;
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-bg text-ink font-sans antialiased; font-size: 15px; line-height: 1.5; }
+  h1, h2, h3 { @apply font-display tracking-tight; text-wrap: balance; }
+  :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+}
+
+@layer components {
+  .card { @apply rounded-card border border-line bg-surface p-5; }
+  .label { @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted; }
+  .num { @apply font-mono tabular-nums; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-ink transition hover:border-muted disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply border-accent bg-accent text-accent-ink hover:border-accent hover:brightness-110; }
+  .btn-ghost { @apply border-transparent bg-transparent hover:bg-sunken; }
+  .btn-sm { @apply px-2.5 py-1.5 text-xs; }
+  .input { @apply w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-accent focus:outline-none; }
+  .field-label { @apply mb-1 block text-xs font-semibold text-muted; }
+  .field-error { @apply mt-1 text-xs font-medium text-bad; }
+  .pill { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .pill::before { content: ""; @apply h-1.5 w-1.5 rounded-full bg-current; }
+  .tag { @apply inline-block rounded bg-sunken px-1.5 py-0.5 text-xs text-muted; }
+  .tag-hit { @apply bg-accent-soft font-semibold text-accent; }
+  .table { @apply w-full border-collapse text-sm; }
+  .table th { @apply whitespace-nowrap border-b border-line px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-muted; }
+  .table td { @apply border-b border-line px-3 py-3 align-middle; }
+  .table tr:last-child td { @apply border-b-0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}

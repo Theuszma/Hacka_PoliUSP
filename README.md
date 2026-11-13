@@ -1,78 +1,115 @@
 # Elo · Rede de indústria circular
 
-Protótipo para o **Hack@Poli 2026** — tema "Engenharia com propósito: o papel do engenheiro na Agenda 2030", eixo **Inovação e Digitalização da Indústria Nacional (ODS 9 e 12)**.
+Projeto do **Hack@Poli 2026** — tema "Engenharia com propósito: o papel do engenheiro na Agenda 2030", eixo **Inovação e Digitalização da Indústria Nacional (ODS 9 e 12)**.
 
 ## O problema
 
-Pequenas e médias indústrias perdem uma parte grande do que compram como resíduo (retalho de chapa, fluido de corte, overspray de tinta, embalagens) e raramente sabem quanto isso custa em reais e em CO₂. Elas também não têm engenheiro dedicado a processo ou meio ambiente. Ao mesmo tempo, estudantes de engenharia precisam de projetos reais (e de horas de extensão), e engenheiros experientes querem mentorar.
+Pequenas e médias indústrias perdem parte grande do que compram como resíduo (retalho de chapa, fluido de corte, overspray de tinta, embalagens) e raramente sabem quanto isso custa em reais e em CO₂. Elas também não têm engenheiro dedicado a processo ou meio ambiente. Ao mesmo tempo, estudantes de engenharia precisam de projetos reais e de horas de extensão, e engenheiros experientes querem mentorar.
 
 ## A solução
 
-O **Elo** é uma plataforma web onde a PME:
+O **Elo** é uma plataforma web com dois lados:
 
-1. **Diagnostica** seus fluxos de material: consumo, perda, destino do resíduo, rastreio por fornecedor/lote. Recebe indicadores de prejuízo (R$), taxa de desperdício, CO₂e incorporado e índice de circularidade.
-2. **Simula** cenários "e se": reduzir a perda de cada insumo com uma alavanca técnica, ou mandar o resíduo para um parceiro da rede.
-3. **Encontra simbiose industrial**: o resíduo de uma empresa vira insumo de outra próxima (match por material, volume, capacidade e distância), nos dois sentidos.
-4. **Conecta-se a engenheiros**: estudantes da Poli e mentores voluntários são recomendados por especialidade, ponderada pelo prejuízo de cada insumo. A PME publica uma demanda com briefing gerado automaticamente a partir do diagnóstico.
-5. **Painel do engenheiro**: o estudante vê as demandas abertas das PMEs, assume uma e acumula horas de extensão.
+**Indústria (PME)**
+1. **Insumos e resíduos**: cadastra cada material comprado, a perda, o destino do resíduo, fornecedor e lote.
+2. **Painel**: prejuízo mensal com resíduos, taxa de desperdício, CO₂e no material perdido e índice de circularidade.
+3. **Simulador**: cenários "e se" combinando melhorias de processo e trocas de resíduo, com economia anual e CO₂e evitado.
+4. **Simbiose industrial**: o motor de matching cruza os resíduos de todas as empresas com o que as outras aceitam como insumo, por material, volume, capacidade, licença ambiental e distância (com frete descontado). Dá para propor, aceitar e recusar trocas.
+5. **Engenheiros**: recomendação de estudantes e mentores por especialidade, ponderada pelo prejuízo de cada insumo. O pedido de apoio já sai com um briefing gerado a partir do diagnóstico.
 
-É aqui que o edital é atendido: o engenheiro é a ponte entre o dado da fábrica e a ação.
+**Engenheiro ou estudante**
+1. **Demandas abertas** ordenadas pela aderência às suas áreas e pelo impacto.
+2. **Demanda**: briefing, linha do tempo com mensagens, assumir, concluir registrando resultado e economia validada.
+3. **Perfil**: horas de extensão e economia gerada para as empresas.
+
+**Impacto da rede**: resíduo desviado do aterro, valor gerado, CO₂e evitado, horas de engenharia e o potencial ainda não aproveitado, tudo calculado a partir do banco.
 
 ## Como rodar
 
-Abra `index.html` em qualquer navegador. Não precisa instalar nada nem ter internet (só as fontes vêm do Google Fonts; sem internet o navegador usa fontes do sistema).
+Requisitos: **Node.js 20 ou mais novo**.
 
-O estado da demonstração fica no `localStorage` do navegador. Use **Reiniciar demonstração** no rodapé para voltar aos dados de exemplo.
-
-## Estrutura
-
-```
-index.html   aplicação completa (HTML + CSS + JS puro, sem dependências)
-src/elo.html fonte da página (sem o cabeçalho HTML; gera o index.html)
-build.sh     monta o index.html a partir de src/elo.html
+```bash
+npm run setup     # instala dependências, cria o banco SQLite e carrega os dados de exemplo
+npm run dev       # http://localhost:3000
 ```
 
-Dentro do script, o código está dividido em blocos:
+Na tela inicial, escolha **Entrar como indústria** (Metalúrgica Ipiranga) ou **Entrar como engenheira** (Ana Ribeiro). Para voltar o banco ao estado inicial: `npm run db:reset`.
 
-- **Dados de exemplo**: empresa, fluxos de material, parceiros, ofertas, engenheiros e demandas.
-- **Cálculos**: `flowMetrics()` (prejuízo, CO₂e, circularidade por fluxo e por cenário), `totals()`, `engineerScores()` (match engenheiro × problema).
-- **Views**: uma função por aba (`viewDiagnostico`, `viewSimulador`, `viewSimbiose`, `viewEngenheiros`, `viewDemandas`, `viewImpacto`), roteadas pelo `#hash` da URL.
+Outros comandos:
 
-### Modelo de cálculo (por fluxo, por mês)
+| Comando | O que faz |
+|---|---|
+| `npm test` | testes unitários do núcleo de cálculo e matching (Vitest) |
+| `npm run lint` | checagem de tipos do TypeScript |
+| `npm run build && npm start` | build de produção |
+
+## Stack
+
+| Camada | Escolha |
+|---|---|
+| Aplicação | Next.js 15 (App Router, Server Components e Server Actions) + React 19 + TypeScript |
+| Banco | Prisma ORM + SQLite local (troque o `provider` para `postgresql` em produção) |
+| Validação | Zod nas Server Actions |
+| Interface | Tailwind CSS com tokens próprios, modo claro e escuro |
+| Testes | Vitest |
+
+## Arquitetura
+
+```
+src/
+  app/                 rotas (App Router)
+    actions.ts         todas as mutações (Server Actions, validadas com Zod)
+    entrar/            escolha de perfil
+    empresa/           painel, insumos, simulador, simbiose, engenheiros, pedidos
+    engenheiro/        demandas abertas, minhas demandas, perfil
+    demandas/[id]/     detalhe compartilhado da demanda
+    impacto/           indicadores da rede
+  lib/
+    catalog.ts         categorias de material, destinos, fatores de emissão, parâmetros de frete
+    metrics.ts         indicadores de desperdício e circularidade (funções puras)
+    matching.ts        motores de simbiose e de engenheiro × problema (funções puras)
+    briefing.ts        geração do briefing do pedido de apoio
+    data.ts            consultas ao banco usadas por várias páginas
+    auth.ts            sessão da demonstração
+  components/          UI (shell, gráficos, mapa da rede, formulários, simulador)
+prisma/
+  schema.prisma        modelo de dados
+  seed.ts              rede piloto fictícia no ABC Paulista
+prototipo-v1/          primeira versão estática (HTML único)
+```
+
+O núcleo de regras (`metrics.ts` e `matching.ts`) não depende de banco nem de framework, por isso roda no servidor (painéis) e no navegador (simulador) e é coberto por testes.
+
+### Modelo de dados
+
+- **Company**: PME com localização (lat/lng).
+- **MaterialFlow**: insumo e sua perda mensal, destino do resíduo, fornecedor e lote.
+- **InputDemand**: o que uma empresa aceita receber como insumo, a que preço, quanto e se tem licença para resíduo perigoso.
+- **Exchange**: proposta de troca entre duas empresas (proposta → aceita/recusada).
+- **Engineer**: perfil técnico (estudante ou mentor), áreas, disponibilidade.
+- **SupportRequest** e **RequestUpdate**: pedido de apoio técnico e sua linha do tempo.
+
+### Cálculos (por fluxo, por mês)
 
 | Indicador | Fórmula |
 |---|---|
-| Resíduo gerado | consumo × perda |
-| Material perdido (R$) | resíduo × custo unitário |
-| Saldo do destino (R$) | resíduo × valor do destino (+ venda, − custo de descarte) |
-| Prejuízo | material perdido − saldo do destino |
+| Resíduo | consumo × perda |
+| Prejuízo | resíduo × custo unitário − resíduo × valor do destino (+ venda, − descarte) |
 | CO₂e no desperdício | resíduo × fator de emissão do material |
-| CO₂e evitado (simbiose) | resíduo × fator × taxa de substituição de matéria-prima virgem no parceiro |
-| Circularidade | massa de resíduo com destino circular ÷ massa total de resíduo |
+| Circularidade | massa com destino circular ÷ massa total de resíduo |
+| Ganho da troca (quem envia) | (preço pago pelo parceiro − valor do destino atual) × volume − frete |
+| Economia da troca (quem recebe) | (preço do material novo − preço pago) × volume |
+| CO₂e evitado na troca | volume × fator × taxa de substituição − emissões do transporte |
 
-Fatores de emissão usados (kg CO₂e por kg ou L) são aproximações de literatura para demonstração: aço 1,9 · alumínio 8,6 · plástico 2,0 · madeira 0,45 · papelão 0,9 · têxtil 5,5 · fluido 2,7 · tinta 3,5.
+Fatores de emissão e parâmetros de frete estão em `src/lib/catalog.ts` e são aproximações para demonstração.
 
-## Arquitetura da versão de produção
+### Próximos passos para produção
 
-```
- PME (web/mobile)      Engenheiro/estudante (web)
-        │                        │
-        └──────── Next.js (React) ┘
-                     │
-              API (Supabase / Postgres + Auth + RLS)
-                     │
-   ┌─────────────────┼──────────────────────┐
- Motor de matching   Motor de indicadores    Integrações
- (resíduo↔insumo,    (CO₂e, circularidade;   (NF-e para importar
-  engenheiro↔demanda) fatores GHG Protocol)   insumos; CETESB/MTR)
-```
-
-- **Front-end**: Next.js + React.
-- **Back-end e banco**: Supabase (Postgres, autenticação, regras por perfil PME / engenheiro / universidade).
-- **Matching**: classificação de resíduos por código IBAMA/CONAMA, busca geográfica (PostGIS) por distância, ordenação por ganho líquido menos frete.
-- **Entrada de dados sem atrito**: importar as notas fiscais de compra (XML da NF-e) para preencher os insumos e o Manifesto de Transporte de Resíduos (MTR/SINIR) para os destinos.
-- **Universidade**: relatório de horas de extensão por estudante, com validação do mentor.
+- Autenticação real (Supabase Auth ou NextAuth) no lugar da escolha de perfil.
+- Postgres com PostGIS para busca geográfica.
+- Importar insumos das notas fiscais de compra (XML da NF-e) e destinos do Manifesto de Transporte de Resíduos (MTR/SINIR).
+- Fatores de emissão de base auditada e relatório de horas de extensão para a Pró-Reitoria.
 
 ## Dados
 
-Todas as empresas, pessoas e números da demonstração são **fictícios**, criados para ilustrar o funcionamento.
+Todas as empresas, pessoas e números são **fictícios**, criados para demonstrar o funcionamento.
