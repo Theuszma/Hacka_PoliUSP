@@ -7,3 +7,7 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 .DS_Store
+
+# Playwright
+/test-results/
+/playwright-report/

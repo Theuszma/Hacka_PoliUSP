@@ -103,6 +103,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         title="Visão geral"
         description={`Diagnóstico de ${monthLabel(months[months.length - 1])} com ${flows.length} insumos monitorados.`}
         actions={<>
+          <Link href="/app/relatorio" className={buttonVariants({ variant: "outline", size: "sm" })}>Relatório</Link>
           <Link href="/app/insumos" className={buttonVariants({ variant: "outline", size: "sm" })}>Atualizar dados</Link>
           <Link href="/app/simulador" className={buttonVariants({ size: "sm" })}>Simular melhorias</Link>
         </>}
@@ -137,7 +138,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               const bench = benchmarkFor(company.sector, flow.category);
               const above = bench !== null && flow.lossRate > bench * 1.05;
               return (
-                <div key={flow.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3">
+                <Link key={flow.id} href={`/app/insumos/${flow.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3 transition hover:bg-subtle">
                   <div className="min-w-0">
                     <p className="truncate text-[13.5px] font-medium">{flow.name}</p>
                     <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
@@ -148,7 +149,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   </div>
                   <p className="tabular text-right text-[13.5px] font-semibold">{money(metrics.loss)}<span className="font-normal text-muted-foreground">/mês</span></p>
                   <div className="col-span-2"><Progress value={(metrics.loss / (ranked[0].metrics.loss || 1)) * 100}  /></div>
-                </div>
+                </Link>
               );
             })}
           </div>

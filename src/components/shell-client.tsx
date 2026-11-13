@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Bell, BarChart3, Boxes, ClipboardList, FlaskConical, GraduationCap, Inbox, LayoutDashboard, LogOut, Menu as MenuIcon, Recycle, Settings, UserRound, Users,
+  Bell, BarChart3, Boxes, FileText, ClipboardList, FlaskConical, GraduationCap, Inbox, LayoutDashboard, LogOut, Menu as MenuIcon, Recycle, Settings, UserRound, Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,7 +17,7 @@ import { Dialog, DialogTrigger, Menu, MenuContent, MenuItem, MenuLabel, MenuSepa
 
 const ICONS = {
   dashboard: LayoutDashboard, flows: Boxes, simulator: FlaskConical, market: Recycle, engineers: Users, requests: ClipboardList,
-  impact: BarChart3, settings: Settings, inbox: Inbox, mine: GraduationCap, profile: UserRound,
+  impact: BarChart3, settings: Settings, inbox: Inbox, mine: GraduationCap, profile: UserRound, report: FileText,
 };
 export type IconKey = keyof typeof ICONS;
 export interface NavItem { href: string; label: string; icon: IconKey; exact?: boolean; badge?: number }
@@ -72,7 +72,7 @@ function OrgCard({ user }: { user: ShellUser }) {
 
 export function Sidebar({ sections, user }: { sections: NavSection[]; user: ShellUser }) {
   return (
-    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-5 border-r bg-subtle px-3 py-4 lg:flex">
+    <aside className="print:!hidden sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-5 border-r bg-subtle px-3 py-4 lg:flex">
       <Logo className="px-2" href="/" />
       <OrgCard user={user} />
       <div className="flex-1 overflow-y-auto"><NavLinks sections={sections} /></div>
@@ -164,7 +164,7 @@ export function UserMenu({ user, settingsHref }: { user: ShellUser; settingsHref
 
 export function TopBar({ sections, user, notifications, settingsHref }: { sections: NavSection[]; user: ShellUser; notifications: NotificationItem[]; settingsHref: string }) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
+    <header className="print:hidden sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
       <MobileNav sections={sections} user={user} />
       <Logo className="lg:hidden" />
       <div className="ml-auto flex items-center gap-1">

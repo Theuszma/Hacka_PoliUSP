@@ -9,10 +9,14 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma db push --force-reset && prisma db seed",
-    "setup": "npm install && prisma db push && prisma db seed"
+    "db:reset": "prisma migrate deploy && prisma db seed",
+    "setup": "npm install && npm run clean && docker compose up -d --wait db && prisma migrate deploy && prisma db seed",
+    "test:e2e": "playwright test",
+    "db:up": "docker compose up -d db",
+    "db:migrate": "prisma migrate deploy",
+    "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -38,6 +42,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "22.15.30",
     "@types/papaparse": "^5.5.2",
     "@types/react": "19.1.8",

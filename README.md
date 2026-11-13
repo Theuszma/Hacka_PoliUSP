@@ -29,15 +29,17 @@ O **Elo** é uma plataforma web com dois lados:
 
 ## Como rodar
 
-Requisitos: **Node.js 20 ou mais novo**.
+Requisitos: **Node.js 20 ou mais novo** e **Docker Desktop** (para o PostgreSQL).
 
 ```bash
 cp .env.example .env   # no Windows: copy .env.example .env
-npm run setup     # instala dependências, cria o banco SQLite e carrega os dados de exemplo
+npm run setup     # instala dependências, sobe o Postgres no Docker, aplica as migrations e carrega os dados
 npm run dev       # http://localhost:3000
 ```
 
-Atualizando de uma versão anterior? O modelo de dados mudou: apague `prisma/dev.db` e rode `npm run setup` de novo.
+Quer rodar tudo dentro do Docker, sem Node na máquina? `docker compose up --build` sobe o banco e o app em http://localhost:3000 e carrega os dados na primeira vez.
+
+**Dados de demonstração.** São fictícios, mas contam uma história coerente de 12 meses numa rede do ABC Paulista: 20 empresas e 16 engenheiros. As trocas aceitas mudam o destino do resíduo a partir do mês em que começaram. As demandas concluídas reduzem a perda a partir do mês da entrega. Mensagens e notificações batem com esses eventos. Gráficos, histórico, marketplace e relatórios mostram o mesmo roteiro.
 
 **Contas**
 
@@ -46,7 +48,7 @@ Atualizando de uma versão anterior? O modelo de dados mudou: apague `prisma/dev
   - Indústria: `rosana@ipiranga.demo` (Metalúrgica Ipiranga)
   - Engenheira: `ana@poli.demo` (Ana Ribeiro, estudante)
 
-Para voltar o banco ao estado inicial: `npm run db:reset`.
+Para voltar o banco ao estado inicial: `npm run db:reset`. Se o Next mostrar erro de campo desconhecido do Prisma depois de atualizar o código, rode `npm run clean` e reinicie o `npm run dev`.
 
 Outros comandos:
 
@@ -54,14 +56,16 @@ Outros comandos:
 |---|---|
 | `npm test` | testes unitários do núcleo de cálculo e matching (Vitest) |
 | `npm run lint` | checagem de tipos do TypeScript |
+| `npm run test:e2e` | testes de ponta a ponta no navegador (Playwright) |
 | `npm run build && npm start` | build de produção |
+| `npm run db:up` | só sobe o Postgres no Docker |
 
 ## Stack
 
 | Camada | Escolha |
 |---|---|
 | Aplicação | Next.js 15 (App Router, Server Components e Server Actions) + React 19 + TypeScript |
-| Banco | Prisma ORM + SQLite local (troque o `provider` para `postgresql` em produção) |
+| Banco | PostgreSQL 16 (Docker Compose) + Prisma ORM com migrations |
 | Validação | Zod nas Server Actions |
 | Autenticação | Contas próprias: senha com scrypt, sessão em cookie httpOnly |
 | Interface | Tailwind CSS com design system próprio (tokens, modo claro e escuro), Radix UI, Lucide, Recharts, Sonner |

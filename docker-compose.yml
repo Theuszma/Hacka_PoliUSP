@@ -1,0 +1,35 @@
+# Elo · ambiente completo com Docker
+#   docker compose up -d db          só o banco (para rodar o app com npm run dev)
+#   docker compose up --build        banco + aplicação em http://localhost:3000
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: elo
+      POSTGRES_PASSWORD: elo
+      POSTGRES_DB: elo
+    ports:
+      - "5432:5432"
+    volumes:
+      - elo-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elo -d elo"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://elo:elo@db:5432/elo
+      # true recria os dados de demonstração a cada subida
+      SEED_ON_START: ${SEED_ON_START:-auto}
+    ports:
+      - "3000:3000"
+
+volumes:
+  elo-db:

@@ -1,12 +1,12 @@
 // Elo · modelo de dados
-// SQLite para rodar local sem instalar nada; troque o provider para "postgresql" em produção.
+// PostgreSQL (suba com `docker compose up -d db`).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

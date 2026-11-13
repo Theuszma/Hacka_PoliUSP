@@ -36,7 +36,7 @@ export async function AppShell({ user, children }: { user: SessionUser; children
           { href: "/app/demandas", label: "Demandas", icon: "requests", badge: active },
         ],
       },
-      { title: "Empresa", items: [{ href: "/impacto", label: "Impacto da rede", icon: "impact" }, { href: "/app/configuracoes", label: "Configurações", icon: "settings" }] },
+      { title: "Empresa", items: [{ href: "/app/relatorio", label: "Relatório", icon: "report" }, { href: "/impacto", label: "Impacto da rede", icon: "impact" }, { href: "/app/configuracoes", label: "Configurações", icon: "settings" }] },
     ];
     shellUser = { name: user.name, email: user.email, org: user.company.name, orgSubtitle: `${sector(user.company.sector).label}`, isDemo: user.isDemo };
   } else {
@@ -59,7 +59,7 @@ export async function AppShell({ user, children }: { user: SessionUser; children
       <Sidebar sections={sections} user={shellUser} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar sections={sections} user={shellUser} notifications={items} settingsHref={settingsHref} />
-        <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-16 pt-6 sm:px-6 lg:px-8 lg:pt-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-16 pt-6 sm:px-6 lg:px-8 lg:pt-8 print:max-w-none print:p-0">{children}</main>
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
-import { Boxes } from "lucide-react";
+import { Boxes, Download } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import Link from "next/link";
 import { requireCompanyUser } from "@/lib/auth";
 import { category, destination } from "@/lib/catalog";
 import { companyFlows, companyHistory } from "@/lib/data";
@@ -30,7 +32,7 @@ export default async function FlowsPage() {
       <PageHeader
         title="Insumos e resíduos"
         description="Tudo o que a fábrica compra, quanto vira resíduo e para onde vai. É a base do diagnóstico, do marketplace e das recomendações."
-        actions={<><ImportDialog /><AddFlowButton /></>}
+        actions={<>{flows.length > 0 && <a href="/app/insumos/exportar" className={buttonVariants({ variant: "ghost", size: "sm" })}><Download />Exportar</a>}<ImportDialog /><AddFlowButton /></>}
       />
       {flows.length === 0 ? (
         <EmptyState icon={<Boxes />} title="Nenhum insumo ainda" description="Adicione um a um ou importe a planilha de compras." action={<AddFlowButton />} />
@@ -58,7 +60,7 @@ export default async function FlowsPage() {
                   return (
                     <TR key={f.id}>
                       <TD>
-                        <p className="font-medium">{f.name}</p>
+                        <Link href={`/app/insumos/${f.id}`} className="font-medium hover:underline">{f.name}</Link>
                         <p className="max-w-[280px] text-xs text-muted-foreground">{category(f.category).label}{f.supplier ? ` · ${f.supplier}` : ""}{f.lot ? ` · lote ${f.lot}` : ""}</p>
                       </TD>
                       <TD className="tabular whitespace-nowrap text-right">{num(f.monthlyQty)} {f.unit}<p className="text-xs text-muted-foreground">{money2(f.unitCost)}/{f.unit}</p></TD>

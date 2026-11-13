@@ -4,7 +4,8 @@ import {
 import Link from "next/link";
 import { demoSignIn } from "@/app/actions";
 import { currentUser, homeFor } from "@/lib/auth";
-import { money, tons } from "@/lib/format";
+import { money, num, pct, tons } from "@/lib/format";
+import { showcase, type Showcase } from "@/lib/showcase";
 import { networkImpact } from "@/lib/network";
 import { PublicFooter, PublicHeader } from "@/components/public-header";
 import { SubmitButton } from "@/components/forms";
@@ -32,15 +33,24 @@ function IconChip({ icon: I, tone, size = "md" }: { icon: typeof TrendingDown; t
   );
 }
 
-function ProductPreview() {
-  const bars = [62, 58, 64, 55, 57, 51, 49, 46, 44, 41, 37, 33];
+const signed = (v: number | null, fmt: (x: number) => string) => (v === null ? "" : `${v > 0 ? "+" : "−"}${fmt(Math.abs(v))}`);
+
+function ProductPreview({ data }: { data: Showcase }) {
+  const max = Math.max(...data.series.map((s) => s.loss), 1);
+  const t = data.totals;
+  const kpis = [
+    ["Prejuízo com resíduos", money(t.loss), signed(data.delta.loss, (x) => pct(x, 1)), "rose", data.delta.loss !== null && data.delta.loss < 0],
+    ["Taxa de desperdício", pct(t.wasteRate, 1), signed(data.delta.wasteRate, (x) => `${num(x * 100, 1)} p.p.`), "amber", data.delta.wasteRate !== null && data.delta.wasteRate < 0],
+    ["CO₂e no material perdido", tons(t.embodiedCo2), signed(data.delta.co2, (x) => pct(x, 1)), "sky", data.delta.co2 !== null && data.delta.co2 < 0],
+    ["Circularidade", pct(t.circularity), signed(data.delta.circularity, (x) => `${num(x * 100, 1)} p.p.`), "emerald", data.delta.circularity !== null && data.delta.circularity > 0],
+  ] as const;
   return (
     <div className="relative mx-auto mt-16 max-w-5xl text-left">
       <div className="absolute -inset-4 -z-10 rounded-[28px] bg-gradient-to-b from-emerald-400/30 via-teal-400/10 to-transparent blur-2xl" />
       <div className="overflow-hidden rounded-xl border border-white/10 bg-card text-card-foreground shadow-2xl shadow-emerald-950/40 ring-1 ring-white/5">
         <div className="flex items-center gap-1.5 border-b bg-subtle px-4 py-2.5">
           <span className="size-2.5 rounded-full bg-rose-400" /><span className="size-2.5 rounded-full bg-amber-400" /><span className="size-2.5 rounded-full bg-emerald-400" />
-          <span className="ml-3 rounded-md bg-background px-2 py-0.5 text-[11px] text-muted-foreground">elo.app/app</span>
+          <span className="ml-3 truncate rounded-md bg-background px-2 py-0.5 text-[11px] text-muted-foreground">{data.name} · {data.city} · dados ao vivo da conta de demonstração</span>
         </div>
         <div className="grid gap-4 p-4 sm:p-6 md:grid-cols-[180px_minmax(0,1fr)]">
           <div className="hidden gap-1 text-[12px] md:grid md:content-start">
@@ -50,12 +60,12 @@ function ProductPreview() {
           </div>
           <div className="grid min-w-0 gap-3">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {[["Prejuízo com resíduos", "R$ 24.090", "−8,2%", "rose"], ["Taxa de desperdício", "14,6%", "−1,1 p.p.", "amber"], ["CO₂e no material perdido", "9,8 t", "−6,0%", "sky"], ["Circularidade", "41%", "+12 p.p.", "emerald"]].map(([l, v, d, t]) => (
+              {kpis.map(([l, v, d, c, good]) => (
                 <div key={l} className="relative overflow-hidden rounded-lg border p-3">
-                  <span className={cn("absolute inset-x-0 top-0 h-0.5", { rose: "bg-rose-500", amber: "bg-amber-500", sky: "bg-sky-500", emerald: "bg-emerald-500" }[t as string])} />
+                  <span className={cn("absolute inset-x-0 top-0 h-0.5", { rose: "bg-rose-500", amber: "bg-amber-500", sky: "bg-sky-500", emerald: "bg-emerald-500" }[c])} />
                   <p className="truncate text-[11px] text-muted-foreground">{l}</p>
                   <p className="tabular mt-1 text-lg font-semibold">{v}</p>
-                  <p className="text-[11px] font-medium text-success">{d}</p>
+                  <p className={cn("tabular h-4 text-[11px] font-medium", good ? "text-success" : "text-danger")}>{d && `${d} no mês`}</p>
                 </div>
               ))}
             </div>
@@ -63,15 +73,18 @@ function ProductPreview() {
               <div className="rounded-lg border p-3">
                 <p className="text-[12px] font-medium">Prejuízo mensal com resíduos</p>
                 <div className="mt-3 flex h-28 items-end gap-1.5">
-                  {bars.map((h, i) => <div key={i} className={cn("flex-1 rounded-t-sm bg-gradient-to-t", i === bars.length - 1 ? "from-emerald-600 to-teal-400" : "from-emerald-500/30 to-teal-400/20")} style={{ height: `${h + 30}%` }} />)}
+                  {data.series.map((s, i) => (
+                    <div key={s.label} title={`${s.label}: ${money(s.loss)}`} className={cn("flex-1 rounded-t-sm bg-gradient-to-t", i === data.series.length - 1 ? "from-emerald-600 to-teal-400" : "from-emerald-500/30 to-teal-400/20")} style={{ height: `${Math.max(8, (s.loss / max) * 100)}%` }} />
+                  ))}
                 </div>
+                <div className="mt-1 flex justify-between text-[10px] text-muted-foreground"><span>{data.series[0]?.label}</span><span>{data.series[data.series.length - 1]?.label}</span></div>
               </div>
-              <div className="grid gap-2 rounded-lg border p-3">
+              <div className="grid content-start gap-2 rounded-lg border p-3">
                 <p className="text-[12px] font-medium">Oportunidades</p>
-                {[["Troca de resíduo", "Retalho de chapa → Ferragens Rudge", "+R$ 3.180", "emerald"], ["Melhoria de processo", "Overspray de tinta", "+R$ 2.430", "sky"], ["Troca de resíduo", "Pallets → Marcenaria Vila Gerty", "+R$ 610", "emerald"]].map(([t, l, v, c]) => (
-                  <div key={l} className="flex items-center justify-between gap-2 rounded-md bg-subtle px-2 py-1.5">
-                    <div className="min-w-0"><p className={cn("text-[10px] font-medium", c === "sky" ? "text-sky-600 dark:text-sky-400" : "text-emerald-600 dark:text-emerald-400")}>{t}</p><p className="truncate text-[11.5px] font-medium">{l}</p></div>
-                    <span className="tabular text-[11.5px] font-semibold text-success">{v}</span>
+                {data.opportunities.map((o) => (
+                  <div key={o.label} className="flex items-center justify-between gap-2 rounded-md bg-subtle px-2 py-1.5">
+                    <div className="min-w-0"><p className={cn("text-[10px] font-medium", o.kind === "process" ? "text-sky-600 dark:text-sky-400" : "text-emerald-600 dark:text-emerald-400")}>{o.kind === "process" ? "Melhoria de processo" : "Troca de resíduo"}</p><p className="truncate text-[11.5px] font-medium">{o.label}</p></div>
+                    <span className="tabular shrink-0 text-[11.5px] font-semibold text-success">+{money(o.value)}</span>
                   </div>
                 ))}
               </div>
@@ -84,7 +97,7 @@ function ProductPreview() {
 }
 
 export default async function Landing() {
-  const [user, n] = await Promise.all([currentUser(), networkImpact()]);
+  const [user, n, demo] = await Promise.all([currentUser(), networkImpact(), showcase()]);
   const loggedHref = user ? homeFor(user) : null;
 
   return (
@@ -118,7 +131,7 @@ export default async function Landing() {
             )}
           </div>
           <p className="mt-4 text-xs text-zinc-500">Sem cartão. Diagnóstico em 5 minutos com os dados de compras que você já tem.</p>
-          <ProductPreview />
+          {demo && <ProductPreview data={demo} />}
         </div>
       </section>
 
